@@ -42,7 +42,9 @@ HEADERS += \
     include/MeshVBO.h \
     include/MaterialWireframe.h \
     include/MaterialFractal.h \
-    include/MaterialEnvMap.h
+    include/MaterialEnvMap.h \
+    include/MaterialBump.h
+
 
 SOURCES += \
     src/main.cpp \
@@ -60,7 +62,8 @@ SOURCES += \
     src/MeshVBO.cpp \
     src/MaterialWireframe.cpp \
     src/MaterialFractal.cpp \
-    src/MaterialEnvMap.cpp
+    src/MaterialEnvMap.cpp \
+    src/MaterialBump.cpp
 
 OTHER_FILES += \
     $$files(shaders/*, true) \

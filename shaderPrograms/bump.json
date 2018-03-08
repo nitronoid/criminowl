@@ -1,0 +1,5 @@
+{
+    "Name" : "Bump",
+    "Vertex" : "shaders/bump_vert.glsl",
+    "Fragment" : "shaders/bump_frag.glsl"
+}

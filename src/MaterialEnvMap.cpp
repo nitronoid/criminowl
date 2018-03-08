@@ -19,10 +19,15 @@ void MaterialEnvMap::init()
 
 void MaterialEnvMap::initGlossMap()
 {
-  m_glossMap.reset(new QOpenGLTexture(QImage("images/gloss.png")));
+  using tex = QOpenGLTexture;
+  m_glossMap.reset(new QOpenGLTexture(QOpenGLTexture::Target2D));
+  auto map = QImage("images/gloss.png").mirrored().convertToFormat(QImage::Format_RGBA8888);
+  m_glossMap->setSize(map.width(), map.height(), map.depth());
+  m_glossMap->setFormat(tex::RGBAFormat);
+  m_glossMap->allocateStorage();
+  m_glossMap->setData(tex::RGBA, tex::UInt8, map.constBits());
   m_glossMap->create();
   m_glossMap->bind(1);
-  using tex = QOpenGLTexture;
   m_glossMap->setWrapMode(tex::Repeat);
   m_glossMap->setMinMagFilters(tex::Linear, tex::Linear);
 }

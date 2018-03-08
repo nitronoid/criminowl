@@ -4,6 +4,7 @@
 #include "MaterialPhong.h"
 #include "MaterialFractal.h"
 #include "MaterialEnvMap.h"
+#include "MaterialBump.h"
 #include <QOpenGLContext>
 
 //-----------------------------------------------------------------------------------------------------
@@ -71,20 +72,23 @@ void DemoScene::keyPress(QKeyEvent* io_event)
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::initMaterials()
 {
-  m_materials.reserve(6);
+  m_materials.reserve(7);
+
+  m_materials.emplace_back(new MaterialBump(m_camera, m_shaderLib, &m_matrices));
   m_materials.emplace_back(new MaterialEnvMap(m_camera, m_shaderLib, &m_matrices));
   m_materials.emplace_back(new MaterialPhong(m_camera, m_shaderLib, &m_matrices));
   m_materials.emplace_back(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, {0.5f, 0.0f, 0.0f}, 1.0f, 1.0f, 0.5f, 1.0f));
   m_materials.emplace_back(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, {0.1f, 0.2f, 0.5f}, 0.5f, 1.0f, 0.4f, 0.2f));
   m_materials.emplace_back(new MaterialWireframe(m_camera, m_shaderLib, &m_matrices));
   m_materials.emplace_back(new MaterialFractal(m_camera, m_shaderLib, &m_matrices));
-  for (size_t i = 0; i < m_materials.size(); ++i)
+
+  for (auto& mat : m_materials)
   {
-    auto& mat = m_materials[i];
     auto name = m_shaderLib->loadShaderProg(mat->shaderFileName());
     mat->setShaderName(name);
     mat->apply();
   }
+
   m_materials[m_currentMaterial]->apply();
 }
 //-----------------------------------------------------------------------------------------------------
