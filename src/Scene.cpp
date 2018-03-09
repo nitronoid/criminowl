@@ -25,7 +25,6 @@ void Scene::initializeGL()
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glViewport(0, 0, width()*devicePixelRatio(), height()*devicePixelRatio());
 
-  // This calls the derived class init func
   init();
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -53,6 +52,7 @@ void Scene::mouseClick(QMouseEvent * io_event)
 //----------------------------------------------------------------------------------------------------------------------
 void Scene::init()
 {
+  makeCurrent();
   m_camera->setMousePos(0,0);
 }
 //------------------------------------------------------------------------------------------------------------------------------

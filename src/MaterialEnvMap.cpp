@@ -4,14 +4,12 @@
 
 void MaterialEnvMap::init()
 {
-  initEnvMap();
-  m_envMap->bind(0);
-
   auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+
+  initEnvMap();
   shaderPtr->setUniformValue("envMap", 0);
 
   initGlossMap();
-  m_glossMap->bind(1);
   shaderPtr->setUniformValue("glossMap", 1);
 
   update();
@@ -46,13 +44,13 @@ void MaterialEnvMap::initEnvMap()
 
   using tex = QOpenGLTexture;
   static constexpr std::array<tex::CubeMapFace,6> dataTypes = {{
-                                                 tex::CubeMapPositiveX,
-                                                 tex::CubeMapPositiveY,
-                                                 tex::CubeMapPositiveZ,
-                                                 tex::CubeMapNegativeX,
-                                                 tex::CubeMapNegativeY,
-                                                 tex::CubeMapNegativeZ
-                                               }};
+                                                                 tex::CubeMapPositiveX,
+                                                                 tex::CubeMapPositiveY,
+                                                                 tex::CubeMapPositiveZ,
+                                                                 tex::CubeMapNegativeX,
+                                                                 tex::CubeMapNegativeY,
+                                                                 tex::CubeMapNegativeZ
+                                                               }};
   std::array<QImage, 6> maps;
   for (size_t i = 0; i < maps.size(); ++i)
     maps[i] = QImage(paths[i]).mirrored().convertToFormat(QImage::Format_RGBA8888);

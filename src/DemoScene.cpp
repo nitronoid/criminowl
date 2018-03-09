@@ -39,6 +39,7 @@ void DemoScene::init()
   Scene::init();
 
   initMaterials();
+
   initGeo();
 
   // Scope the using declaration
@@ -82,6 +83,7 @@ void DemoScene::initMaterials()
   m_materials.emplace_back(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, {0.1f, 0.2f, 0.5f}, 0.5f, 1.0f, 0.4f, 0.2f));
   m_materials.emplace_back(new MaterialWireframe(m_camera, m_shaderLib, &m_matrices));
   m_materials.emplace_back(new MaterialFractal(m_camera, m_shaderLib, &m_matrices));
+
 
   for (auto& mat : m_materials)
   {
