@@ -39,7 +39,7 @@ void MaterialPBR::update()
 
 const char* MaterialPBR::shaderFileName() const
 {
-  return "shaderPrograms/redPBR.json";
+  return "shaderPrograms/owl_pbr.json";
 }
 
 

@@ -1,0 +1,5 @@
+{
+    "Name" : "OwlPBR",
+    "Vertex" : "shaders/owl_pbr_vert.glsl",
+    "Fragment" : "shaders/owl_pbr_frag.glsl"
+}

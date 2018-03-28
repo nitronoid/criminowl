@@ -1,5 +1,5 @@
 TEMPLATE = app
-TARGET = Project
+TARGET = Criminowl
 
 UI_HEADERS_DIR = ui
 OBJECTS_DIR = obj
@@ -70,14 +70,12 @@ OTHER_FILES += \
     $$files(shaderPrograms/*, true) \
     $$files(models/*, true)
 
+
 FORMS += ui/mainwindow.ui
 
 linux:{
     LIBS += -lGL -lGLU -lGLEW -lassimp
 }
-
-
-#DISTFILES +=
 
 DISTFILES += \
     shaders/WireframeGeometry.glsl \

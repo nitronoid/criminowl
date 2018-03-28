@@ -10,14 +10,12 @@
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::writeMeshAttributes()
 {
-  const auto& mesh = m_meshes[m_meshIndex];
-
   using namespace MeshAttributes;
   for (const auto buff : {VERTEX, UV, NORMAL})
   {
-    m_meshVBO.write(mesh.getAttribData(buff), buff);
+    m_meshVBO.write(m_owlMesh.getAttribData(buff), buff);
   }
-  m_meshVBO.setIndices(mesh.getIndicesData());
+  m_meshVBO.setIndices(m_owlMesh.getIndicesData());
 }
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::setAttributeBuffers()
@@ -51,12 +49,7 @@ void DemoScene::init()
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::initGeo()
 {
-  m_meshes[0].load("models/cube.obj");
-  m_meshes[1].load("models/plane.obj");
-  m_meshes[2].load("models/Face.obj");
-  m_meshes[3].load("models/Suzanne.obj");
-  m_meshes[4].load("models/test2.obj");
-  m_meshes[5].load("models/Asteroid.obj");
+  m_owlMesh.load("models/owl.obj");
   // Create and bind our Vertex Array Object
   m_vao->create();
   m_vao->bind();
@@ -103,15 +96,13 @@ void DemoScene::rotating( const bool _rotating )
 void DemoScene::generateNewGeometry()
 {
   makeCurrent();
-  m_meshIndex = (m_meshIndex + 1) % m_meshes.size();
-  auto& mesh = m_meshes[m_meshIndex];
   m_meshVBO.reset(
         sizeof(GLushort),
-        mesh.getNIndicesData(),
+        m_owlMesh.getNIndicesData(),
         sizeof(GLfloat),
-        mesh.getNVertData(),
-        mesh.getNUVData(),
-        mesh.getNNormData()
+        m_owlMesh.getNVertData(),
+        m_owlMesh.getNUVData(),
+        m_owlMesh.getNNormData()
         );
   writeMeshAttributes();
   setAttributeBuffers();
@@ -139,7 +130,6 @@ void DemoScene::renderScene()
   m_materials[m_currentMaterial]->update();
 
   m_meshVBO.use();
-  glDrawElements(GL_TRIANGLES, m_meshes[m_meshIndex].getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
-//  glDrawArrays(GL_TRIANGLES, 0, m_meshes[m_meshIndex].getNVertData()/3);
+  glDrawElements(GL_TRIANGLES, m_owlMesh.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
 }
 //-----------------------------------------------------------------------------------------------------
