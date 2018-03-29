@@ -22,7 +22,7 @@ public:
   /// @param [in] _shaderPaths contains paths to the vertex, fragment, and geometry shaders in that order,
   /// any paths left blank are ignored.
   //-----------------------------------------------------------------------------------------------------
-  void createShader(const std::string &_name, const std::array<QString, 3> &_shaderPaths);
+  void createShader(const std::string &_name, const std::array<QString, 5> &_shaderPaths);
   //-----------------------------------------------------------------------------------------------------
   /// @brief Binds a stored shader.
   /// @param [in] _name is the name of the shader program that should be bound.
@@ -41,7 +41,7 @@ public:
   QOpenGLShaderProgram* getCurrentShader();
 
 private:
-  enum SHADER_TYPES {VERTEX, FRAGMENT, GEOMETRY};
+  enum SHADER_TYPES {VERTEX, FRAGMENT, GEOMETRY, TESSCONTROL, TESSEVAL};
   //-----------------------------------------------------------------------------------------------------
   /// @brief A map from shader name to shader program, so that they can be reused and easily bound.
   //-----------------------------------------------------------------------------------------------------

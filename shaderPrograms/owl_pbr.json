@@ -1,5 +1,8 @@
 {
     "Name" : "OwlPBR",
     "Vertex" : "shaders/owl_pbr_vert.glsl",
-    "Fragment" : "shaders/owl_pbr_frag.glsl"
+    "Fragment" : "shaders/owl_pbr_frag.glsl",
+    "Geometry" : "shaders/owl_pbr_geo.glsl",
+    "TessellationControl" : "shaders/owl_pbr_tess_control.glsl",
+    "TessellationEvaluation" : "shaders/owl_pbr_tess_eval.glsl"
 }

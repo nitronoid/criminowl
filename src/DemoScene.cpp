@@ -6,6 +6,7 @@
 #include "MaterialEnvMap.h"
 #include "MaterialBump.h"
 #include <QOpenGLContext>
+#include <QOpenGLFunctions_4_1_Core>
 
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::writeMeshAttributes()
@@ -56,6 +57,8 @@ void DemoScene::initGeo()
   // Create and bind our Vertex Buffer Object
   m_meshVBO.init();
   generateNewGeometry();
+
+  context()->versionFunctions<QOpenGLFunctions_4_1_Core>()->glPatchParameteri(GL_PATCH_VERTICES, 3);
 }
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::keyPress(QKeyEvent* io_event)
@@ -69,14 +72,9 @@ void DemoScene::initMaterials()
 {
   m_materials.reserve(7);
 
-  m_materials.emplace_back(new MaterialBump(m_camera, m_shaderLib, &m_matrices));
-  m_materials.emplace_back(new MaterialEnvMap(m_camera, m_shaderLib, &m_matrices));
-  m_materials.emplace_back(new MaterialPhong(m_camera, m_shaderLib, &m_matrices));
   m_materials.emplace_back(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, {0.5f, 0.0f, 0.0f}, 1.0f, 1.0f, 0.5f, 1.0f));
   m_materials.emplace_back(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, {0.1f, 0.2f, 0.5f}, 0.5f, 1.0f, 0.4f, 0.2f));
   m_materials.emplace_back(new MaterialWireframe(m_camera, m_shaderLib, &m_matrices));
-  m_materials.emplace_back(new MaterialFractal(m_camera, m_shaderLib, &m_matrices));
-
 
   for (auto& mat : m_materials)
   {
@@ -130,6 +128,6 @@ void DemoScene::renderScene()
   m_materials[m_currentMaterial]->update();
 
   m_meshVBO.use();
-  glDrawElements(GL_TRIANGLES, m_owlMesh.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
+  glDrawElements(GL_PATCHES, m_owlMesh.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
 }
 //-----------------------------------------------------------------------------------------------------

@@ -18,11 +18,12 @@ std::string ShaderLib::loadShaderProg(const QString &_jsonFileName)
   // Get a string out from the json
   std::string shaderName = shaderParts["Name"].toString().toStdString();
 
-  enum {VERTEX, FRAGMENT, GEOMETRY};
-  constexpr std::array<const char*, 3> shaderNames = {{"Vertex", "Fragment", "Geometry"}};
-  std::array<QString, 3> shaderPaths;
+  static constexpr std::array<const char*, 5> shaderNames = {
+    {"Vertex", "Fragment", "Geometry", "TessellationControl", "TessellationEvaluation"}
+  };
+  std::array<QString, 5> shaderPaths;
 
-  for (auto shader : {VERTEX, FRAGMENT, GEOMETRY})
+  for (auto shader : {VERTEX, FRAGMENT, GEOMETRY, TESSCONTROL, TESSEVAL})
   {
     auto& name = shaderNames[shader];
     shaderPaths[shader] = shaderParts.contains(name) ? toStr(shaderParts[name]) : "";
@@ -35,14 +36,15 @@ std::string ShaderLib::loadShaderProg(const QString &_jsonFileName)
   return shaderName;
 }
 
-void ShaderLib::createShader(const std::string &_name, const std::array<QString, 3> &_shaderPaths)
+void ShaderLib::createShader(const std::string &_name, const std::array<QString, 5> &_shaderPaths)
 {
   QOpenGLShaderProgram *program = new QOpenGLShaderProgram();
 
-  enum {VERTEX, FRAGMENT, GEOMETRY};
   using shdr = QOpenGLShader;
-  constexpr shdr::ShaderType qShaders[] = {shdr::Vertex, shdr::Fragment, shdr::Geometry};
-  for (auto shader : {VERTEX, FRAGMENT, GEOMETRY})
+  static constexpr shdr::ShaderType qShaders[] = {
+    shdr::Vertex, shdr::Fragment, shdr::Geometry, shdr::TessellationControl, shdr::TessellationEvaluation
+  };
+  for (auto shader : {VERTEX, FRAGMENT, GEOMETRY, TESSCONTROL, TESSEVAL})
   {
     auto path = _shaderPaths[shader];
     if (path == "") continue;
