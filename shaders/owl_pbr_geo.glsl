@@ -33,6 +33,8 @@ uniform float eyeThickness = 0.08;
 uniform float eyeGap       = 0.19;
 uniform float eyeFuzz      = 0.02;
 
+#include "shaders/include/owl_eye_funcs.h"
+
 // Linear interpolation at between x and y, at t
 float lerp(float x, float y, float t)
 {
@@ -90,14 +92,21 @@ float eyes(vec3 _posA, vec3 _posB, float fuzz, float gap, float thickness, float
 
 void main( void )
 {
-  for(int i=0; i < 3; i++)
+  for(int i = 0; i < 3; i++)
   {
     Normal = normalize(te_normal[i]);
     TexCoords = te_uv[i];
 
+    vec3 pos = te_position[i];
+    float rotation = radians(eyeRotation);
+    vec3 posA = eyePos(pos, eyeScale, eyeTranslate, rotation);
+    pos.x *= -1.0;
+    vec3 posB = eyePos(pos, eyeScale, eyeTranslate, -rotation);
+    float maskA = eyeMask(posA, eyeFuzz, 0.7);
+    float maskB = eyeMask(posB, eyeFuzz, 0.7);
+    float bigMask = mask(maskA, maskB, eyeFuzz, te_normal[i].z);
 
-
-    float height = eyes(te_posA[i], te_posB[i], eyeFuzz, eyeGap, eyeThickness, eyeWarp, eyeExponent, te_maskA[i], te_maskB[i]) * te_bigMask[i];
+    float height = eyes(posA, posB, eyeFuzz, eyeGap, eyeThickness, eyeWarp, eyeExponent, maskA, maskB) * bigMask;
 
     EyeVal = height;
 

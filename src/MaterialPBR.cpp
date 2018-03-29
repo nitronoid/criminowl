@@ -1,11 +1,13 @@
 #include "MaterialPBR.h"
 #include "Scene.h"
 #include "ShaderLib.h"
+#include <QOpenGLFunctions_4_0_Core>
 
 void MaterialPBR::init()
 {
   auto shaderPtr = m_shaderLib->getCurrentShader();
 
+  shaderPtr->setPatchVertexCount(3);
   shaderPtr->setUniformValue("albedo", QVector3D{m_albedo.x, m_albedo.y, m_albedo.z});
   shaderPtr->setUniformValue("ao", m_ao);
   shaderPtr->setUniformValue("exposure", m_exposure);

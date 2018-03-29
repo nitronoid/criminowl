@@ -57,8 +57,6 @@ void DemoScene::initGeo()
   // Create and bind our Vertex Buffer Object
   m_meshVBO.init();
   generateNewGeometry();
-
-  context()->versionFunctions<QOpenGLFunctions_4_1_Core>()->glPatchParameteri(GL_PATCH_VERTICES, 3);
 }
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::keyPress(QKeyEvent* io_event)

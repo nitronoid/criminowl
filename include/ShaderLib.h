@@ -41,6 +41,10 @@ public:
   QOpenGLShaderProgram* getCurrentShader();
 
 private:
+  std::string loadFileToString(const std::string &_path);
+  void parseIncludes(std::string &io_shaderString);
+
+private:
   enum SHADER_TYPES {VERTEX, FRAGMENT, GEOMETRY, TESSCONTROL, TESSEVAL};
   //-----------------------------------------------------------------------------------------------------
   /// @brief A map from shader name to shader program, so that they can be reused and easily bound.
