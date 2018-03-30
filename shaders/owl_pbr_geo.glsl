@@ -54,33 +54,23 @@ float height(vec3 _pos, float _z)
   * x = (u, v, -(nx/nz)u - (ny/nz)v - (n.p)/nz)
   *   = (u, v, au + bv + c)
   */
-vec3 firstDifferenceEstimator(vec3 p, vec3 n, float _z, float delta) {
-    float a = -(n.x/n.z);
-    float b = -(n.y/n.z);
-    float c = (n.x*p.x+n.y*p.y+n.z*p.z)/n.z;
+vec3 firstDifferenceEstimator(vec3 p, vec3 n, float _z, float delta) 
+{
     float halfdelta = 0.5 * delta;
-    float invdelta = 1.0 / delta;
+    float invdelta  = 1.0 / delta;
 
-    float u = -halfdelta; 
-    float v = -halfdelta;
-    //float c00 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
-    float c00 = height(p + vec3(u,v,0), _z);
+    vec3 offset = vec3(-halfdelta, halfdelta, 0.0);
 
-    u = -halfdelta; v = halfdelta;
-    //float c01 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
-    float c01 = height(p + vec3(u,v,0), _z);
+    float cxx = height(p + offset.xxz, _z);
+    float cxy = height(p + offset.xyz, _z);
+    float cyx = height(p + offset.yxz, _z);
+    float cyy = height(p + offset.yyz, _z);
 
-    u = halfdelta; v = -halfdelta;
-    //float c10 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
-    float c10 = height(p + vec3(u,v,0), _z);
-
-    u = halfdelta; v = halfdelta;
-    //float c11 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
-    float c11 = height(p + vec3(u,v,0), _z);
-
-    return vec3( 0.5*((c10-c00)+(c11-c01))*invdelta,
-                 0.5*((c01-c00)+(c11-c10))*invdelta,
-                 1.0);
+    return vec3(
+      0.5 * ((cyx - cxx) + (cyy - cxy)) * invdelta,
+      0.5 * ((cxy - cxx) + (cyy - cyx)) * invdelta,
+      1.0
+      );
 }
 
 void main()
@@ -96,9 +86,9 @@ void main()
     EyeVal = h;
 
     vec4 newPos = vec4(te_position[i] + Normal * h * eyeDisp, 1.0);
-    vec3 fpos = newPos.xyz ;
+
     // Now calculate the specular component
-    vec3 fd = normalize(vec3(eyeDisp, eyeDisp, 1.0) * firstDifferenceEstimator(fpos, Normal, te_normal[i].z, 0.1));
+    vec3 fd = normalize(vec3(eyeDisp, eyeDisp, 1.0) * firstDifferenceEstimator(newPos.xyz, Normal, te_normal[i].z, 0.1));
 
     // Calls our normal perturbation function
     vec3 n1 = perturbNormalVector(Normal, fd);
