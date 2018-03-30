@@ -34,83 +34,76 @@ uniform float eyeGap       = 0.19;
 uniform float eyeFuzz      = 0.02;
 
 #include "shaders/include/owl_eye_funcs.h"
+#include "shaders/include/owl_bump_funcs.h"
 
-// Linear interpolation at between x and y, at t
-float lerp(float x, float y, float t)
+float height(vec3 _pos, float _z)
 {
-  return (1 - t) * x + t * y;
+  float rotation = radians(eyeRotation);
+  vec3 posA = eyePos(_pos, eyeScale, eyeTranslate, rotation);
+  _pos.x *= -1.0;
+  vec3 posB = eyePos(_pos, eyeScale, eyeTranslate, -rotation);
+  float maskA = eyeMask(posA, eyeFuzz, 0.7);
+  float maskB = eyeMask(posB, eyeFuzz, 0.7);
+  float bigMask = mask(maskA, maskB, eyeFuzz, _z);
+  return eyes(posA, posB, eyeFuzz, eyeGap, eyeThickness, eyeWarp, eyeExponent, maskA, maskB) * bigMask;
 }
 
-// adapted from larry gritz advanced renderman patterns.h
-// Combines two smooth steps to create a smooth bump, 0 -> 1 -> 0
-float smoothpulse (float e0, float e1, float e2, float e3, float x)
-{
-  return smoothstep(e0,e1,x) - smoothstep(e2,e3,x);
+/**
+  * Compute the first difference around a point based on the surface normal.
+  * The parametric formula for a point on the plane can be given by
+  * x = (u, v, -(nx/nz)u - (ny/nz)v - (n.p)/nz)
+  *   = (u, v, au + bv + c)
+  */
+vec3 firstDifferenceEstimator(vec3 p, vec3 n, float _z, float delta) {
+    float a = -(n.x/n.z);
+    float b = -(n.y/n.z);
+    float c = (n.x*p.x+n.y*p.y+n.z*p.z)/n.z;
+    float halfdelta = 0.5 * delta;
+    float invdelta = 1.0 / delta;
+
+    float u = -halfdelta; 
+    float v = -halfdelta;
+    //float c00 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
+    float c00 = height(p + vec3(u,v,0), _z);
+
+    u = -halfdelta; v = halfdelta;
+    //float c01 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
+    float c01 = height(p + vec3(u,v,0), _z);
+
+    u = halfdelta; v = -halfdelta;
+    //float c10 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
+    float c10 = height(p + vec3(u,v,0), _z);
+
+    u = halfdelta; v = halfdelta;
+    //float c11 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
+    float c11 = height(p + vec3(u,v,0), _z);
+
+    return vec3( 0.5*((c10-c00)+(c11-c01))*invdelta,
+                 0.5*((c01-c00)+(c11-c10))*invdelta,
+                 1.0);
 }
 
-// Creates an infinite trail of smooth bumps
-float smoothpulsetrain (float e0, float e1, float e2, float e3, float period, float x)
-{
-  return smoothpulse(e0, e1, e2, e3, mod(x,period));
-}
-
-// Wrapper for smoothpulsetrain that assumes the smoothpulse is uniform
-float smoothpulsetraineven (float e0, float e1, float fuzz, float period, float x)
-{
-  return smoothpulsetrain(e0-fuzz, e0, e1, e1+fuzz, period, x);
-}
-
-float eyezone (vec3 pos, float fuzz, float gap, float thickness, float warp, float expo, float _mask)
-{
-  float recipExpo = 1.0 / expo;
-  // calculate the current radius
-  float r = sqrt(pos.x * pos.x + pos.y * pos.y);
-  // calculate the sum of the normalised x and y
-  float sum = (pos.x + pos.y) / r;
-  // calculate the period of the pulse train based on our sum and exp
-  float period = gap * lerp(1, pow(sum, recipExpo), warp);
-  float adjustedFuzz = fuzz;
-  float elipses = 1 - smoothpulsetraineven(thickness*0.5, thickness + period * 0.5, adjustedFuzz, period, pow(r, recipExpo));
-
-  return clamp(elipses, 0.0, 1.0) * _mask;
-}
-
-float eyes(vec3 _posA, vec3 _posB, float fuzz, float gap, float thickness, float warp, float expo, float _maskA, float _maskB)
-{
-  // Add some noise based on P, and scale in x
-  vec3 variance = noise3(_posA) * 0.066666;
-  _posA += variance;
-  _posB -= variance;
-
-
-  float eyes = eyezone(_posA, fuzz, gap, thickness + noise1(_posA * 0.5) * 0.05, warp, expo, _maskA)
-      + eyezone(_posB, fuzz, gap, thickness + noise1(_posB * 0.5) * 0.05, warp, expo, _maskB);
-
-
-  return eyes;
-}
-
-void main( void )
+void main()
 {
   for(int i = 0; i < 3; i++)
   {
     Normal = normalize(te_normal[i]);
     TexCoords = te_uv[i];
 
-    vec3 pos = te_position[i];
-    float rotation = radians(eyeRotation);
-    vec3 posA = eyePos(pos, eyeScale, eyeTranslate, rotation);
-    pos.x *= -1.0;
-    vec3 posB = eyePos(pos, eyeScale, eyeTranslate, -rotation);
-    float maskA = eyeMask(posA, eyeFuzz, 0.7);
-    float maskB = eyeMask(posB, eyeFuzz, 0.7);
-    float bigMask = mask(maskA, maskB, eyeFuzz, te_normal[i].z);
+    vec3 offset = vec3(1.0, 1.0, 0.0);
+    float h = height(te_position[i], te_normal[i].z);
 
-    float height = eyes(posA, posB, eyeFuzz, eyeGap, eyeThickness, eyeWarp, eyeExponent, maskA, maskB) * bigMask;
+    EyeVal = h;
 
-    EyeVal = height;
+    vec4 newPos = vec4(te_position[i] + Normal * h * eyeDisp, 1.0);
+    vec3 fpos = newPos.xyz ;
+    // Now calculate the specular component
+    vec3 fd = normalize(vec3(eyeDisp, eyeDisp, 1.0) * firstDifferenceEstimator(fpos, Normal, te_normal[i].z, 0.1));
 
-    vec4 newPos = vec4(te_position[i] + Normal * height * eyeDisp, 1.0);
+    // Calls our normal perturbation function
+    vec3 n1 = perturbNormalVector(Normal, fd);
+
+    Normal = mix(Normal, n1, h);
     WorldPos = vec3(M * newPos);
 
     gl_Position = MVP * newPos;
@@ -119,5 +112,3 @@ void main( void )
   }
   EndPrimitive();
 }
-
-
