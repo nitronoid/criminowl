@@ -1,0 +1,5 @@
+{
+    "Name" : "HDR_cubemap_irradiance",
+    "Vertex" : "shaders/hdr_cubemap_vert.glsl",
+    "Fragment" : "shaders/hdr_cubemap_irradiance_frag.glsl"
+}

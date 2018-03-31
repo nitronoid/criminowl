@@ -1,0 +1,5 @@
+{
+    "Name" : "HDR_cubemap",
+    "Vertex" : "shaders/hdr_cubemap_vert.glsl",
+    "Fragment" : "shaders/hdr_cubemap_frag.glsl"
+}

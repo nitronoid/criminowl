@@ -47,12 +47,14 @@ private:
   void initSphereMap();
   void initCubeMap(const Mesh &_cube, const MeshVBO &_vbo);
   void initIrradianceMap(const Mesh &_cube, const MeshVBO &_vbo);
+  void initPrefilteredMap(const Mesh &_cube, const MeshVBO &_vbo);
   std::array<QMatrix4x4, 6>  m_captureViews;
   QMatrix4x4 m_captureProjection;
 
   std::unique_ptr<QOpenGLTexture> m_sphereMap;
   std::unique_ptr<QOpenGLTexture> m_cubeMap;
   std::unique_ptr<QOpenGLTexture> m_irradianceMap;
+  std::unique_ptr<QOpenGLTexture> m_prefilteredMap;
 
   glm::vec3 m_albedo;
   QOpenGLContext* m_context;

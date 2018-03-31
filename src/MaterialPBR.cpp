@@ -3,7 +3,7 @@
 #include "ShaderLib.h"
 #include <QOpenGLFunctions_4_1_Core>
 #include <QOpenGLFramebufferObject>
-//#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
 void MaterialPBR::init()
@@ -219,5 +219,23 @@ void MaterialPBR::initIrradianceMap(const Mesh &_cube, const MeshVBO &_vbo)
 
   funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
   fbo->release();
+}
+
+void MaterialPBR::initPrefilteredMap(const Mesh &_cube, const MeshVBO &_vbo)
+{
+  using tex = QOpenGLTexture;
+  auto defaultFBO = m_context->defaultFramebufferObject();
+  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
+
+  m_prefilteredMap.reset(new QOpenGLTexture(QOpenGLTexture::TargetCubeMap));
+  m_prefilteredMap->create();
+  m_prefilteredMap->bind(0);
+  m_prefilteredMap->setSize(128, 128);
+  m_prefilteredMap->setFormat(tex::RGB16F);
+  m_prefilteredMap->allocateStorage();
+  m_prefilteredMap->setMinMagFilters(tex::Linear, tex::Linear);
+  m_prefilteredMap->setWrapMode(tex::ClampToEdge);
+  m_prefilteredMap->generateMipMaps();
+  m_prefilteredMap->setAutoMipMapGenerationEnabled(true);
 }
 

@@ -8,7 +8,6 @@
 #include <QOpenGLContext>
 #include <QOpenGLFunctions_4_1_Core>
 #include <QOpenGLFramebufferObject>
-#include "HDR_cube.h"
 
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::writeMeshAttributes()
@@ -39,11 +38,10 @@ void DemoScene::init()
 {
   Scene::init();
 
+  glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LEQUAL);
 
-//  HDR_cube map;
-//  map.init(m_shaderLib, context());
   initMaterials();
 
   initGeo();

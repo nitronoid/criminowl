@@ -44,8 +44,7 @@ HEADERS += \
     include/MaterialWireframe.h \
     include/MaterialFractal.h \
     include/MaterialEnvMap.h \
-    include/MaterialBump.h \
-    include/HDR_cube.h
+    include/MaterialBump.h
 
 
 SOURCES += \
@@ -65,8 +64,7 @@ SOURCES += \
     src/MaterialWireframe.cpp \
     src/MaterialFractal.cpp \
     src/MaterialEnvMap.cpp \
-    src/MaterialBump.cpp \
-    src/HDR_cube.cpp
+    src/MaterialBump.cpp
 
 OTHER_FILES += \
     $$files(shaders/*, true) \
