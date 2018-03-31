@@ -4,8 +4,6 @@
 #include "Material.h"
 #include <chrono>
 
-class Camera;
-
 class MaterialFractal : public Material
 {
 public:

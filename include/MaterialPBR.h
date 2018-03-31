@@ -3,6 +3,7 @@
 
 #include "Material.h"
 #include "vec3.hpp"
+#include "HDR_cube.h"
 
 class MaterialPBR : public Material
 {
@@ -11,6 +12,7 @@ public:
       const std::shared_ptr<Camera> &io_camera,
       const std::shared_ptr<ShaderLib> &io_shaderLib,
       std::array<glm::mat4, 3>* io_matrices,
+      QOpenGLContext* io_context,
       const glm::vec3 &_albedo,
       const float _ao,
       const float _exposure,
@@ -19,6 +21,7 @@ public:
       ) :
     Material(io_camera, io_shaderLib, io_matrices),
     m_albedo(_albedo),
+    m_context(io_context),
     m_ao(_ao),
     m_exposure(_exposure),
     m_roughness(_roughness),
@@ -38,7 +41,13 @@ public:
 
 
 private:
+  void initEnvMap();
+  std::unique_ptr<QOpenGLTexture> m_envMap;
+
+
   glm::vec3 m_albedo;
+//  HDR_cube m_envMap;
+  QOpenGLContext* m_context;
   float m_ao;
   float m_exposure;
   float m_roughness;

@@ -5,8 +5,6 @@
 #include <QOpenGLTexture>
 #include <QImage>
 
-class Camera;
-
 class MaterialEnvMap : public Material
 {
 public:

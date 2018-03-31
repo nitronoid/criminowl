@@ -23,6 +23,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 INCLUDEPATH += \
     /usr/local/include/glm/glm \
     /usr/local/include/glm \
+    /usr/local/include/stb \
     $$PWD/include \
     $$PWD/ui \
     $$PWD/shaders
@@ -43,7 +44,8 @@ HEADERS += \
     include/MaterialWireframe.h \
     include/MaterialFractal.h \
     include/MaterialEnvMap.h \
-    include/MaterialBump.h
+    include/MaterialBump.h \
+    include/HDR_cube.h
 
 
 SOURCES += \
@@ -63,7 +65,8 @@ SOURCES += \
     src/MaterialWireframe.cpp \
     src/MaterialFractal.cpp \
     src/MaterialEnvMap.cpp \
-    src/MaterialBump.cpp
+    src/MaterialBump.cpp \
+    src/HDR_cube.cpp
 
 OTHER_FILES += \
     $$files(shaders/*, true) \

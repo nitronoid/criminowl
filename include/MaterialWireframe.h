@@ -3,8 +3,6 @@
 
 #include "Material.h"
 
-class Camera;
-
 class MaterialWireframe : public Material
 {
 public:

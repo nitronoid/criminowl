@@ -16,6 +16,8 @@ uniform float ao;
 // camera parameters
 uniform vec3 camPos;
 uniform float exposure;
+uniform samplerCube irradianceMap;
+uniform sampler2D sphereMap;
 
 
 // lights
@@ -80,7 +82,10 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
   return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 // ----------------------------------------------------------------------------
-
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+  return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
 
 
 void main()
@@ -88,7 +93,7 @@ void main()
 
   vec3 N = normalize(Normal);
 
-  vec3 eyeAlbedo = vec3(EyeVal);
+  vec3 eyeAlbedo = albedo;//vec3(texture(sphereMap, TexCoords));//albedo;//vec3(EyeVal);
 
   vec3 V = normalize(camPos - WorldPos);
   vec3 R = reflect(-V, N);
@@ -140,7 +145,11 @@ void main()
 
   // ambient lighting (note that the next IBL tutorial will replace
   // this ambient lighting with environment lighting).
-  vec3 ambient = vec3(0.03) * eyeAlbedo * ao;
+  vec3 kS = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+  vec3 kD = 1.0 - kS;
+  vec3 irradiance = texture(irradianceMap, R).rgb;
+  vec3 diffuse    = irradiance * albedo;
+  vec3 ambient    = (kD * diffuse) * ao;
 
   vec3 color = ambient + Lo;
 
