@@ -16,8 +16,8 @@ uniform float ao;
 // camera parameters
 uniform vec3 camPos;
 uniform float exposure;
+//env map params
 uniform samplerCube irradianceMap;
-uniform sampler2D sphereMap;
 
 
 // lights
@@ -93,7 +93,7 @@ void main()
 
   vec3 N = normalize(Normal);
 
-  vec3 eyeAlbedo = albedo;//vec3(texture(sphereMap, TexCoords));//albedo;//vec3(EyeVal);
+  vec3 eyeAlbedo = albedo;
 
   vec3 V = normalize(camPos - WorldPos);
   vec3 R = reflect(-V, N);

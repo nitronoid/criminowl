@@ -6,11 +6,11 @@ void MaterialEnvMap::init()
 {
   auto shaderPtr = m_shaderLib->getShader(m_shaderName);
 
-//  initEnvMap();
-//  shaderPtr->setUniformValue("envMap", 0);
+  initEnvMap();
+  shaderPtr->setUniformValue("envMap", 0);
 
-//  initGlossMap();
-//  shaderPtr->setUniformValue("glossMap", 1);
+  initGlossMap();
+  shaderPtr->setUniformValue("glossMap", 1);
 
   update();
 }

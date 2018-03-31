@@ -89,8 +89,6 @@ private:
   //-----------------------------------------------------------------------------------------------------
   virtual void renderScene() override;
 
-  void initSphereMap();
-  void initCubeMap();
 
 private:
   //-----------------------------------------------------------------------------------------------------
@@ -123,9 +121,6 @@ private:
 
 
 
-  unsigned int m_hdrTextureID;
-  unsigned int m_envTextureID;
-  unsigned int m_irradianceTextureID;
 
 };
 

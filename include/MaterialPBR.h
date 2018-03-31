@@ -41,9 +41,12 @@ public:
 
 
 private:
+  void initSphereMap();
   void initEnvMap();
-  std::unique_ptr<QOpenGLTexture> m_envMap;
 
+  std::unique_ptr<QOpenGLTexture> m_sphereMap;
+  std::unique_ptr<QOpenGLTexture> m_cubeMap;
+  std::unique_ptr<QOpenGLTexture> m_irradianceMap;
 
   glm::vec3 m_albedo;
 //  HDR_cube m_envMap;
