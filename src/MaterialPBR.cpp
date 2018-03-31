@@ -9,8 +9,36 @@
 void MaterialPBR::init()
 {
   auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+
+  QOpenGLVertexArrayObject vao;
+  // Create and bind our Vertex Array Object
+  vao.create();
+  vao.bind();
+
+  Mesh cube;
+  cube.load("models/unitCube.obj");
+
+  MeshVBO vbo;
+  // Create and bind our Vertex Buffer Object
+  vbo.init();
+  vbo.reset(
+        sizeof(GLushort),
+        cube.getNIndicesData(),
+        sizeof(GLfloat),
+        cube.getNVertData(),
+        cube.getNUVData(),
+        cube.getNNormData()
+        );
+  {
+    using namespace MeshAttributes;
+    vbo.write(cube.getVertexData(), VERTEX);
+    vbo.setIndices(cube.getIndicesData());
+  }
+
+  initCaptureMatrices();
   initSphereMap();
-  initEnvMap();
+  initCubeMap(cube, vbo);
+  initIrradianceMap(cube, vbo);
   shaderPtr->bind();
 
   shaderPtr->setUniformValue("irradianceMap", 0);
@@ -53,6 +81,26 @@ const char* MaterialPBR::shaderFileName() const
   return "shaderPrograms/owl_pbr.json";
 }
 
+void MaterialPBR::initCaptureMatrices()
+{
+  glm::mat4 captureProjectionGLM = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+  m_captureProjection = QMatrix4x4(glm::value_ptr(captureProjectionGLM)).transposed();
+  glm::mat4 captureViews[] =
+  {
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+  };
+  for (unsigned int i = 0; i < 6; ++i)
+  {
+    // Convert from glm to Qt
+    QMatrix4x4 view(glm::value_ptr(captureViews[i]));
+    m_captureViews[i] = view.transposed();
+  }
+}
 
 void MaterialPBR::initSphereMap()
 {
@@ -74,36 +122,16 @@ void MaterialPBR::initSphereMap()
   stbi_image_free(data);
 }
 
-void MaterialPBR::initEnvMap()
+void MaterialPBR::initCubeMap(const Mesh &_cube, const MeshVBO &_vbo)
 {
+  using tex = QOpenGLTexture;
   auto defaultFBO = m_context->defaultFramebufferObject();
   auto cubeMapShaderName = m_shaderLib->loadShaderProg("shaderPrograms/hdr_cubemap.json");
   auto cubeMapShader = m_shaderLib->getShader(cubeMapShaderName);
   auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
 
-  QOpenGLVertexArrayObject vao;
-  // Create and bind our Vertex Array Object
-  vao.create();
-  vao.bind();
-
-  Mesh cube;
-  cube.load("models/unitCube.obj");
-
-  MeshVBO vbo;
-  // Create and bind our Vertex Buffer Object
-  vbo.init();
-  vbo.reset(
-        sizeof(GLushort),
-        cube.getNIndicesData(),
-        sizeof(GLfloat),
-        cube.getNVertData(),
-        cube.getNUVData(),
-        cube.getNNormData()
-        );
-
   auto fbo = std::make_unique<QOpenGLFramebufferObject>(512, 512, QOpenGLFramebufferObject::Depth);
 
-  using tex = QOpenGLTexture;
   m_cubeMap.reset(new QOpenGLTexture(QOpenGLTexture::TargetCubeMap));
   m_cubeMap->create();
   m_cubeMap->bind(0);
@@ -115,24 +143,11 @@ void MaterialPBR::initEnvMap()
   m_cubeMap->generateMipMaps();
   m_cubeMap->setAutoMipMapGenerationEnabled(true);
 
-  glm::mat4 captureProjectionGLM = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-  QMatrix4x4 captureProjection(glm::value_ptr(captureProjectionGLM));
-  captureProjection = captureProjection.transposed();
-  glm::mat4 captureViews[] =
-  {
-    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-    glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-  };
-
   // convert HDR equirectangular environment map to cubemap equivalent
   cubeMapShader->bind();
   cubeMapShader->setUniformValue("sphereMap", 0);
   // Need to transpose the matrix as they both use different majors
-  cubeMapShader->setUniformValue("projection", captureProjection);
+  cubeMapShader->setUniformValue("projection", m_captureProjection);
   m_sphereMap->bind(0);
 
   // don't forget to configure the viewport to the capture dimensions.
@@ -140,28 +155,30 @@ void MaterialPBR::initEnvMap()
   fbo->bind();
   {
     using namespace MeshAttributes;
-    vbo.write(cube.getVertexData(), VERTEX);
-    vbo.setIndices(cube.getIndicesData());
     cubeMapShader->enableAttributeArray(VERTEX);
-    cubeMapShader->setAttributeBuffer(VERTEX, GL_FLOAT, vbo.offset(VERTEX), 3);
+    cubeMapShader->setAttributeBuffer(VERTEX, GL_FLOAT, _vbo.offset(VERTEX), 3);
   }
 
   for (unsigned int i = 0; i < 6; ++i)
   {
-    // Convert from glm to Qt
-    QMatrix4x4 view(glm::value_ptr(captureViews[i]));
     // Need to transpose the matrix as they both use different majors
-    cubeMapShader->setUniformValue("view", view.transposed());
+    cubeMapShader->setUniformValue("view", m_captureViews[i]);
     funcs->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_cubeMap->textureId(), 0);
     funcs->glClearColor(0.f, 0.f, 0.f, 1.f);
     funcs->glClear(GL_COLOR_BUFFER_BIT |GL_DEPTH_BUFFER_BIT);
 
-    funcs->glDrawElements(GL_TRIANGLES, cube.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
+    funcs->glDrawElements(GL_TRIANGLES, _cube.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
   }
   funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+}
+
+void MaterialPBR::initIrradianceMap(const Mesh &_cube, const MeshVBO &_vbo)
+{
+  using tex = QOpenGLTexture;
+  auto defaultFBO = m_context->defaultFramebufferObject();
+  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
+
   m_irradianceMap.reset(new QOpenGLTexture(QOpenGLTexture::TargetCubeMap));
   m_irradianceMap->create();
   m_irradianceMap->bind(0);
@@ -173,8 +190,7 @@ void MaterialPBR::initEnvMap()
   m_irradianceMap->generateMipMaps();
   m_irradianceMap->setAutoMipMapGenerationEnabled(true);
 
-  fbo->release();
-  fbo = std::make_unique<QOpenGLFramebufferObject>(32, 32, QOpenGLFramebufferObject::Depth);
+  auto fbo = std::make_unique<QOpenGLFramebufferObject>(32, 32, QOpenGLFramebufferObject::Depth);
 
   // pbr: solve diffuse integral by convolution to create an irradiance (cube)map.
   // -----------------------------------------------------------------------------
@@ -182,26 +198,26 @@ void MaterialPBR::initEnvMap()
   auto irradianceShader = m_shaderLib->getShader(irradianceShaderName);
   irradianceShader->bind();
   irradianceShader->setUniformValue("envMap", 0);
-  irradianceShader->setUniformValue("projection", captureProjection);
+  irradianceShader->setUniformValue("projection", m_captureProjection);
   m_cubeMap->bind(0);
-
-  funcs->glViewport(0, 0, 32, 32); // don't forget to configure the viewport to the capture dimensions.
-//  funcs->glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+  // don't forget to configure the viewport to the capture dimensions.
+  funcs->glViewport(0, 0, 32, 32);
   fbo->bind();
+  {
+    using namespace MeshAttributes;
+    irradianceShader->enableAttributeArray(VERTEX);
+    irradianceShader->setAttributeBuffer(VERTEX, GL_FLOAT, _vbo.offset(VERTEX), 3);
+  }
   for (unsigned int i = 0; i < 6; ++i)
   {
-    // Convert from glm to Qt
-    QMatrix4x4 view(glm::value_ptr(captureViews[i]));
-    // Need to transpose the matrix as they both use different majors
-    irradianceShader->setUniformValue("view", view.transposed());
+    irradianceShader->setUniformValue("view", m_captureViews[i]);
     funcs->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_irradianceMap->textureId(), 0);
     funcs->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    funcs->glDrawElements(GL_TRIANGLES, cube.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
+    funcs->glDrawElements(GL_TRIANGLES, _cube.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
   }
 
   funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
   fbo->release();
 }
-
 
