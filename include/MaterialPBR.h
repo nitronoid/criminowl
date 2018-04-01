@@ -17,7 +17,6 @@ public:
       QOpenGLContext* io_context,
       const glm::vec3 &_albedo,
       const float _ao,
-      const float _exposure,
       const float _roughness,
       const float _metallic
       ) :
@@ -25,7 +24,6 @@ public:
     m_albedo(_albedo),
     m_context(io_context),
     m_ao(_ao),
-    m_exposure(_exposure),
     m_roughness(_roughness),
     m_metallic(_metallic)
   {}
@@ -61,12 +59,8 @@ private:
   glm::vec3 m_albedo;
   QOpenGLContext* m_context;
   float m_ao;
-  float m_exposure;
   float m_roughness;
   float m_metallic;
-
-  unsigned int m_brdfLUTTexture;
-  unsigned int m_prefilterMap;
 
 };
 

@@ -15,7 +15,6 @@ uniform float roughness;
 uniform float ao;
 // camera parameters
 uniform vec3 camPos;
-uniform float exposure;
 //env map params
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
