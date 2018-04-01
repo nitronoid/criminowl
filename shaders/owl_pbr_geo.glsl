@@ -16,6 +16,7 @@ in float te_bigMask[3];
 //out
 out vec2 TexCoords;
 out vec3 WorldPos;
+out vec3 LocalPos;
 out vec3 Normal;
 out float EyeVal;
 
@@ -77,6 +78,7 @@ void main()
 {
   for(int i = 0; i < 3; i++)
   {
+    LocalPos = te_position[i];
     Normal = normalize(te_normal[i]);
     TexCoords = te_uv[i];
 

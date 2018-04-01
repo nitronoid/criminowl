@@ -5,6 +5,7 @@ layout (location = 0) out vec4 fragColour;
 
 in vec2 TexCoords;
 in vec3 WorldPos;
+in vec3 LocalPos;
 in vec3 Normal;
 in float EyeVal;
 
@@ -19,7 +20,8 @@ uniform vec3 camPos;
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
 uniform sampler2D   brdfLUT;
-
+//vert params
+uniform vec3 offsetPos;
 
 // lights
 const float scale = 10.0f;
@@ -41,6 +43,8 @@ const vec3 lightColors[4] = vec3[4](
 
 // Define pi
 const float PI = 3.14159265359;
+
+#include "shaders/include/noise_funcs.h"
 
 // ----------------------------------------------------------------------------
 float DistributionGGX(vec3 N, vec3 H, float roughness)
@@ -88,13 +92,58 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
   return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
+vec4 calcAlbedoDisp()
+{
+  vec3 randP = LocalPos + offsetPos; 
+  float layers[] = float[](
+    // large darken
+    1 - clamp(1.0,0.0,blendNoise(randPos(randP + vec3(1.0,0.0,0.0), 4, 5), 0.005)),
+    // thin darkening noise
+    turb(randP, 4) * blendNoise(randPos(LocalPos, 2, 15), 0.01),
+    // small variance
+    turb(randP, 4) * blendNoise(randP, 2) * 2,
+    // light brushed
+    brushed(randP, 0.25, vec3(20.0,1.0,1.0)) * slicednoise(randPos(randP, 2), 0.5, 5, 0.2),
+    // dark brushed
+    brushed(randP, 0.5, vec3(5.0,25.0,1.0)) * slicednoise(randPos(randP, 3), 0.6, 3, 0.5),
+    // rough wood
+    veins(randP, 6, 10) * slicednoise(randPos(randP, 1), 0.3, 3, 1.1),
+    // veins
+    veins(randP, 4, 2) * slicednoise(randPos(randP, 4), 1, 1.25, 0.15) * 2,
+    // wood chips
+    slicednoise(randP, 2.0, 0.01, 0.4)
+  );
+
+  vec3 cols[] = vec3[](
+    vec3(0.036, 0.008, 0.001),
+    vec3(0.03, 0.009, 0.0),
+    vec3(0.08, 0.002, 0.0),
+    vec3(0.703, 0.188, 0.108),
+    vec3(0.707, 0.090, 0.021),
+    vec3(0.960, 0.436, 0.149),
+    vec3(0.843, 0.326, 0.176),
+    vec3(1, 0.31, 0.171)
+  );
+  
+  vec4 result = vec4(0.093, 0.02, 0.003, 0.0);
+
+  for (int i = 0; i < 8; ++i)
+  {
+    result.xyz += mix(result.xyz, cols[i], layers[i]);
+    result.w += layers[i];
+  }
+
+  return result;
+}
+
 
 void main()
 {
 
   vec3 N = normalize(Normal);
 
-  vec3 eyeAlbedo = albedo;
+  vec4 albedoDisp = calcAlbedoDisp();
+  vec3 eyeAlbedo = vec3(albedoDisp.w);
 
   vec3 V = normalize(camPos - WorldPos);
   vec3 R = reflect(-V, N);
@@ -157,7 +206,7 @@ void main()
   kD *= (1.0 - metallic);
 
   vec3 irradiance = texture(irradianceMap, N).rgb;
-  vec3 diffuse    = irradiance * albedo;
+  vec3 diffuse    = irradiance * eyeAlbedo;
 
 
   const float MAX_REFLECTION_LOD = 4.0;

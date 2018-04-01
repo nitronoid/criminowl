@@ -38,12 +38,6 @@ float mask(float _maskA, float _maskB, float _fuzz, float _zDir)
   return (_maskA + _maskB) * smoothstep(0.0, _fuzz, _zDir);
 }
 
-// Linear interpolation at between x and y, at t
-float lerp(float x, float y, float t)
-{
-  return (1 - t) * x + t * y;
-}
-
 // adapted from larry gritz advanced renderman patterns.h
 // Combines two smooth steps to create a smooth bump, 0 -> 1 -> 0
 float smoothpulse (float e0, float e1, float e2, float e3, float x)
@@ -71,7 +65,7 @@ float eyezone (vec3 pos, float fuzz, float gap, float thickness, float warp, flo
   // calculate the sum of the normalised x and y
   float sum = (pos.x + pos.y) / r;
   // calculate the period of the pulse train based on our sum and exp
-  float period = gap * lerp(1, pow(sum, recipExpo), warp);
+  float period = gap * mix(1, pow(sum, recipExpo), warp);
   float adjustedFuzz = fuzz;
   float elipses = 1 - smoothpulsetraineven(thickness*0.5, thickness + period * 0.5, adjustedFuzz, period, pow(r, recipExpo));
 
