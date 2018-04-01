@@ -31,7 +31,6 @@ void DemoScene::setAttributeBuffers()
     prog->enableAttributeArray(buff);
     prog->setAttributeBuffer(buff, GL_FLOAT, m_meshVBO.offset(buff), tupleSize[buff]);
   }
-
 }
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::init()
@@ -112,7 +111,6 @@ void DemoScene::renderScene()
   }
 
   m_material->update();
-
 
   m_meshVBO.use();
   glDrawElements(GL_PATCHES, m_owlMesh.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);

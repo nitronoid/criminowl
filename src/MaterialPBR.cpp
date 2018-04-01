@@ -39,6 +39,7 @@ void MaterialPBR::init()
   initSphereMap();
   initCubeMap(cube, vbo);
   initIrradianceMap(cube, vbo);
+  initPrefilteredMap(cube, vbo);
   shaderPtr->bind();
 
   shaderPtr->setUniformValue("irradianceMap", 0);
@@ -170,7 +171,7 @@ void MaterialPBR::initCubeMap(const Mesh &_cube, const MeshVBO &_vbo)
     funcs->glDrawElements(GL_TRIANGLES, _cube.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
   }
   funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
-
+  fbo->release();
 }
 
 void MaterialPBR::initIrradianceMap(const Mesh &_cube, const MeshVBO &_vbo)
@@ -213,7 +214,6 @@ void MaterialPBR::initIrradianceMap(const Mesh &_cube, const MeshVBO &_vbo)
     irradianceShader->setUniformValue("view", m_captureViews[i]);
     funcs->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_irradianceMap->textureId(), 0);
     funcs->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     funcs->glDrawElements(GL_TRIANGLES, _cube.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
   }
 
@@ -233,9 +233,45 @@ void MaterialPBR::initPrefilteredMap(const Mesh &_cube, const MeshVBO &_vbo)
   m_prefilteredMap->setSize(128, 128);
   m_prefilteredMap->setFormat(tex::RGB16F);
   m_prefilteredMap->allocateStorage();
-  m_prefilteredMap->setMinMagFilters(tex::Linear, tex::Linear);
+  m_prefilteredMap->setMinMagFilters(tex::LinearMipMapLinear, tex::Linear);
   m_prefilteredMap->setWrapMode(tex::ClampToEdge);
   m_prefilteredMap->generateMipMaps();
   m_prefilteredMap->setAutoMipMapGenerationEnabled(true);
+
+  auto prefilterShaderName = m_shaderLib->loadShaderProg("shaderPrograms/hdr_cubemap_prefilter.json");
+  auto prefilterShader = m_shaderLib->getShader(prefilterShaderName);
+  prefilterShader->bind();
+  prefilterShader->setUniformValue("envMap", 0);
+  prefilterShader->setUniformValue("projection", m_captureProjection);
+
+  m_cubeMap->bind(0);
+  auto fbo = std::make_unique<QOpenGLFramebufferObject>(32, 32, QOpenGLFramebufferObject::Depth);
+  {
+    using namespace MeshAttributes;
+    prefilterShader->enableAttributeArray(VERTEX);
+    prefilterShader->setAttributeBuffer(VERTEX, GL_FLOAT, _vbo.offset(VERTEX), 3);
+  }
+  int maxMipLevels = 5;
+  for (int mip = 0; mip < maxMipLevels; ++mip)
+  {
+    // reisze framebuffer according to mip-level size.
+    auto mipWidth  = static_cast<int>(128 * std::pow(0.5f, mip));
+    auto mipHeight = static_cast<int>(128 * std::pow(0.5f, mip));
+    fbo->bind();
+    funcs->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
+    funcs->glViewport(0, 0, mipWidth, mipHeight);
+
+    float roughness = static_cast<float>(mip) / static_cast<float>(maxMipLevels - 1);
+    prefilterShader->setUniformValue("roughness", roughness);
+    for (unsigned int i = 0; i < 6; ++i)
+    {
+      prefilterShader->setUniformValue("view", m_captureViews[i]);
+      funcs->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_prefilteredMap->textureId(), mip);
+      funcs->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      funcs->glDrawElements(GL_TRIANGLES, _cube.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
+    }
+  }
+  funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
+  fbo->release();
 }
 

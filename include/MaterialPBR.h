@@ -41,7 +41,6 @@ public:
 
   virtual const char* shaderFileName() const override;
 
-
 private:
   void initCaptureMatrices();
   void initSphereMap();
