@@ -17,18 +17,13 @@ void MaterialPBR::init()
 
   Mesh cube;
   cube.load("models/unitCube.obj");
+  Mesh plane;
+  plane.load("models/unitPlane.obj");
 
   MeshVBO vbo;
   // Create and bind our Vertex Buffer Object
   vbo.init();
-  vbo.reset(
-        sizeof(GLushort),
-        cube.getNIndicesData(),
-        sizeof(GLfloat),
-        cube.getNVertData(),
-        cube.getNUVData(),
-        cube.getNNormData()
-        );
+  vbo.reset(sizeof(GLushort), cube.getNIndicesData(), sizeof(GLfloat), cube.getNVertData(), cube.getNUVData(), cube.getNNormData());
   {
     using namespace MeshAttributes;
     vbo.write(cube.getVertexData(), VERTEX);
@@ -40,10 +35,22 @@ void MaterialPBR::init()
   initCubeMap(cube, vbo);
   initIrradianceMap(cube, vbo);
   initPrefilteredMap(cube, vbo);
+
+  vbo.reset(sizeof(GLushort), plane.getNIndicesData(), sizeof(GLfloat), plane.getNVertData(), plane.getNUVData(), plane.getNNormData());
+  {
+    using namespace MeshAttributes;
+    vbo.write(plane.getVertexData(), VERTEX);
+    vbo.write(plane.getUVsData(), UV);
+    vbo.setIndices(plane.getIndicesData());
+  }
+  initBrdfLUTMap(plane, vbo);
+
   shaderPtr->bind();
+  shaderPtr->setPatchVertexCount(3);
 
   shaderPtr->setUniformValue("irradianceMap", 0);
-  shaderPtr->setPatchVertexCount(3);
+  shaderPtr->setUniformValue("prefilterMap", 1);
+  shaderPtr->setUniformValue("brdfLUT", 2);
   shaderPtr->setUniformValue("albedo", QVector3D{m_albedo.x, m_albedo.y, m_albedo.z});
   shaderPtr->setUniformValue("ao", m_ao);
   shaderPtr->setUniformValue("exposure", m_exposure);
@@ -58,6 +65,13 @@ void MaterialPBR::update()
 {
 
   m_irradianceMap->bind(0);
+  m_prefilteredMap->bind(1);
+//  glActiveTexture(GL_TEXTURE1);
+//  glBindTexture(GL_TEXTURE_2D, m_prefilterMap);
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, m_brdfLUTTexture);
+  //  m_brdfLUTMap->bind(2);
+
   auto shaderPtr = m_shaderLib->getShader(m_shaderName);
   auto eye = m_cam->getCameraEye();
   shaderPtr->setUniformValue("camPos", QVector3D{eye.x, eye.y, eye.z});
@@ -107,7 +121,7 @@ void MaterialPBR::initSphereMap()
 {
   stbi_set_flip_vertically_on_load(true);
   int width, height, nrComponents;
-  float *data = stbi_loadf("images/LA_Downtown_Afternoon_Fishing_3k.hdr", &width, &height, &nrComponents, 0);
+  float *data = stbi_loadf("images/Alexs_Apt_2k.hdr", &width, &height, &nrComponents, 0);
   const float* cdata = data;
   using tex = QOpenGLTexture;
   m_sphereMap.reset(new QOpenGLTexture(QOpenGLTexture::Target2D));
@@ -141,8 +155,6 @@ void MaterialPBR::initCubeMap(const Mesh &_cube, const MeshVBO &_vbo)
   m_cubeMap->allocateStorage();
   m_cubeMap->setMinMagFilters(tex::Linear, tex::Linear);
   m_cubeMap->setWrapMode(tex::ClampToEdge);
-  m_cubeMap->generateMipMaps();
-  m_cubeMap->setAutoMipMapGenerationEnabled(true);
 
   // convert HDR equirectangular environment map to cubemap equivalent
   cubeMapShader->bind();
@@ -188,8 +200,6 @@ void MaterialPBR::initIrradianceMap(const Mesh &_cube, const MeshVBO &_vbo)
   m_irradianceMap->allocateStorage();
   m_irradianceMap->setMinMagFilters(tex::Linear, tex::Linear);
   m_irradianceMap->setWrapMode(tex::ClampToEdge);
-  m_irradianceMap->generateMipMaps();
-  m_irradianceMap->setAutoMipMapGenerationEnabled(true);
 
   auto fbo = std::make_unique<QOpenGLFramebufferObject>(32, 32, QOpenGLFramebufferObject::Depth);
 
@@ -232,11 +242,13 @@ void MaterialPBR::initPrefilteredMap(const Mesh &_cube, const MeshVBO &_vbo)
   m_prefilteredMap->bind(0);
   m_prefilteredMap->setSize(128, 128);
   m_prefilteredMap->setFormat(tex::RGB16F);
-  m_prefilteredMap->allocateStorage();
   m_prefilteredMap->setMinMagFilters(tex::LinearMipMapLinear, tex::Linear);
   m_prefilteredMap->setWrapMode(tex::ClampToEdge);
+  m_prefilteredMap->setMipLevels(4);
+  m_prefilteredMap->setMipMaxLevel(4);
+  m_prefilteredMap->allocateStorage();
   m_prefilteredMap->generateMipMaps();
-  m_prefilteredMap->setAutoMipMapGenerationEnabled(true);
+//  m_prefilteredMap->setAutoMipMapGenerationEnabled(true);
 
   auto prefilterShaderName = m_shaderLib->loadShaderProg("shaderPrograms/hdr_cubemap_prefilter.json");
   auto prefilterShader = m_shaderLib->getShader(prefilterShaderName);
@@ -245,7 +257,6 @@ void MaterialPBR::initPrefilteredMap(const Mesh &_cube, const MeshVBO &_vbo)
   prefilterShader->setUniformValue("projection", m_captureProjection);
 
   m_cubeMap->bind(0);
-  auto fbo = std::make_unique<QOpenGLFramebufferObject>(32, 32, QOpenGLFramebufferObject::Depth);
   {
     using namespace MeshAttributes;
     prefilterShader->enableAttributeArray(VERTEX);
@@ -257,8 +268,9 @@ void MaterialPBR::initPrefilteredMap(const Mesh &_cube, const MeshVBO &_vbo)
     // reisze framebuffer according to mip-level size.
     auto mipWidth  = static_cast<int>(128 * std::pow(0.5f, mip));
     auto mipHeight = static_cast<int>(128 * std::pow(0.5f, mip));
+    auto fbo = std::make_unique<QOpenGLFramebufferObject>(mipWidth, mipHeight, QOpenGLFramebufferObject::Depth);
     fbo->bind();
-    funcs->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
+    //    funcs->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
     funcs->glViewport(0, 0, mipWidth, mipHeight);
 
     float roughness = static_cast<float>(mip) / static_cast<float>(maxMipLevels - 1);
@@ -270,8 +282,98 @@ void MaterialPBR::initPrefilteredMap(const Mesh &_cube, const MeshVBO &_vbo)
       funcs->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       funcs->glDrawElements(GL_TRIANGLES, _cube.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
     }
+    funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
+    fbo->release();
   }
-  funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
-  fbo->release();
 }
+
+void MaterialPBR::initBrdfLUTMap(const Mesh &_plane, const MeshVBO &_vbo)
+{
+  auto defaultFBO = m_context->defaultFramebufferObject();
+  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
+  unsigned int captureFBO;
+  unsigned int captureRBO;
+  funcs->glGenFramebuffers(1, &captureFBO);
+  funcs->glGenRenderbuffers(1, &captureRBO);
+
+  funcs->glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+  funcs->glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+  funcs->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+  funcs->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+
+  funcs->glGenTextures(1, &m_brdfLUTTexture);
+
+  // pre-allocate enough memory for the LUT texture.
+  funcs->glBindTexture(GL_TEXTURE_2D, m_brdfLUTTexture);
+  funcs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, nullptr);
+  // be sure to set wrapping mode to GL_CLAMP_TO_EDGE
+  funcs->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  funcs->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  funcs->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  funcs->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  // then re-configure capture framebuffer object and render screen-space quad with BRDF shader.
+  funcs->glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+  funcs->glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+  funcs->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+  funcs->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_brdfLUTTexture, 0);
+
+  auto brdfLUTShaderName = m_shaderLib->loadShaderProg("shaderPrograms/hdr_cubemap_brdf.json");
+  auto brdfLUTShader = m_shaderLib->getShader(brdfLUTShaderName);
+
+  funcs->glViewport(0, 0, 512, 512);
+  brdfLUTShader->bind();
+  {
+    using namespace MeshAttributes;
+    brdfLUTShader->enableAttributeArray(VERTEX);
+    brdfLUTShader->setAttributeBuffer(VERTEX, GL_FLOAT, _vbo.offset(VERTEX), 3);
+    brdfLUTShader->enableAttributeArray(UV);
+    brdfLUTShader->setAttributeBuffer(UV, GL_FLOAT, _vbo.offset(UV), 2);
+  }
+
+  funcs->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_brdfLUTTexture, 0);
+  funcs->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  funcs->glDrawElements(GL_TRIANGLES, _plane.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
+
+
+  funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
+
+}
+
+//void MaterialPBR::initBrdfLUTMap(const Mesh &_plane, const MeshVBO &_vbo)
+//{
+//  using tex = QOpenGLTexture;
+//  auto defaultFBO = m_context->defaultFramebufferObject();
+//  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
+
+//  m_brdfLUTMap.reset(new QOpenGLTexture(QOpenGLTexture::Target2D));
+//  m_brdfLUTMap->create();
+//  m_brdfLUTMap->bind(0);
+//  m_brdfLUTMap->setSize(512, 512);
+//  m_brdfLUTMap->setFormat(tex::RGB16F);
+//  m_brdfLUTMap->allocateStorage();
+//  m_brdfLUTMap->setMinMagFilters(tex::Linear, tex::Linear);
+//  m_brdfLUTMap->setWrapMode(tex::ClampToEdge);
+
+//  auto brdfLUTShaderName = m_shaderLib->loadShaderProg("shaderPrograms/hdr_cubemap_brdf.json");
+//  auto brdfLUTShader = m_shaderLib->getShader(brdfLUTShaderName);
+
+//  auto fbo = std::make_unique<QOpenGLFramebufferObject>(512, 512, QOpenGLFramebufferObject::Depth);
+//  brdfLUTShader->bind();
+//  {
+//    using namespace MeshAttributes;
+//    brdfLUTShader->enableAttributeArray(VERTEX);
+//    brdfLUTShader->setAttributeBuffer(VERTEX, GL_FLOAT, _vbo.offset(VERTEX), 3);
+//    brdfLUTShader->enableAttributeArray(UV);
+//    brdfLUTShader->setAttributeBuffer(UV, GL_FLOAT, _vbo.offset(UV), 2);
+//  }
+
+//  funcs->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_brdfLUTMap->textureId(), 0);
+//  funcs->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//  funcs->glDrawElements(GL_TRIANGLES, _plane.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
+
+//  funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
+//  fbo->release();
+//}
+
 

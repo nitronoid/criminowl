@@ -47,6 +47,8 @@ private:
   void initCubeMap(const Mesh &_cube, const MeshVBO &_vbo);
   void initIrradianceMap(const Mesh &_cube, const MeshVBO &_vbo);
   void initPrefilteredMap(const Mesh &_cube, const MeshVBO &_vbo);
+  void initBrdfLUTMap(const Mesh &_plane, const MeshVBO &_vbo);
+
   std::array<QMatrix4x4, 6>  m_captureViews;
   QMatrix4x4 m_captureProjection;
 
@@ -54,6 +56,7 @@ private:
   std::unique_ptr<QOpenGLTexture> m_cubeMap;
   std::unique_ptr<QOpenGLTexture> m_irradianceMap;
   std::unique_ptr<QOpenGLTexture> m_prefilteredMap;
+  std::unique_ptr<QOpenGLTexture> m_brdfLUTMap;
 
   glm::vec3 m_albedo;
   QOpenGLContext* m_context;
@@ -61,6 +64,9 @@ private:
   float m_exposure;
   float m_roughness;
   float m_metallic;
+
+  unsigned int m_brdfLUTTexture;
+  unsigned int m_prefilterMap;
 
 };
 

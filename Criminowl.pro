@@ -46,7 +46,6 @@ HEADERS += \
     include/MaterialEnvMap.h \
     include/MaterialBump.h
 
-
 SOURCES += \
     src/main.cpp \
     src/MainWindow.cpp \
