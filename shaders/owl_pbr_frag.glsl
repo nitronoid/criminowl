@@ -97,9 +97,9 @@ vec4 calcAlbedoDisp()
   vec3 randP = LocalPos + offsetPos; 
   float layers[] = float[](
     // large darken
-    1 - clamp(1.0,0.0,blendNoise(randPos(randP + vec3(1.0,0.0,0.0), 4, 5), 0.005)),
+    (1 - clamp(blendNoise(randPos(randP + vec3(1.0,2.0,0.0), 4, 5), 0.005) * 0.25 + 0.25, 0.0, 1.0)),
     // thin darkening noise
-    turb(randP, 4) * blendNoise(randPos(LocalPos, 2, 15), 0.01),
+    turb(randP, 4) * blendNoise(randPos(LocalPos, 2, 15), 0.01) * 0.5,
     // small variance
     turb(randP, 4) * blendNoise(randP, 2) * 2,
     // light brushed
@@ -107,15 +107,15 @@ vec4 calcAlbedoDisp()
     // dark brushed
     brushed(randP, 0.5, vec3(5.0,25.0,1.0)) * slicednoise(randPos(randP, 3), 0.6, 3, 0.5),
     // rough wood
-    veins(randP, 6, 10) * slicednoise(randPos(randP, 1), 0.3, 3, 1.1),
+    veins(randP, 6, 10) * slicednoise(randPos(randP, 1), 0.3, 3, 1.5),
     // veins
     veins(randP, 4, 2) * slicednoise(randPos(randP, 4), 1, 1.25, 0.15) * 2,
     // wood chips
-    slicednoise(randP, 2.0, 0.01, 0.4)
+    slicednoise(randP, 2.0, 0.04, 0.4)
   );
 
   vec3 cols[] = vec3[](
-    vec3(0.036, 0.008, 0.001),
+    vec3(0.016, 0.004, 0.0005),
     vec3(0.03, 0.009, 0.0),
     vec3(0.08, 0.002, 0.0),
     vec3(0.703, 0.188, 0.108),
@@ -129,7 +129,7 @@ vec4 calcAlbedoDisp()
 
   for (int i = 0; i < 8; ++i)
   {
-    result.xyz += mix(result.xyz, cols[i], layers[i]);
+    result.xyz = mix(result.xyz, cols[i], layers[i]);
     result.w += layers[i];
   }
 
@@ -143,7 +143,7 @@ void main()
   vec3 N = normalize(Normal);
 
   vec4 albedoDisp = calcAlbedoDisp();
-  vec3 eyeAlbedo = vec3(albedoDisp.w);
+  vec3 eyeAlbedo = vec3(albedoDisp.xyz);
 
   vec3 V = normalize(camPos - WorldPos);
   vec3 R = reflect(-V, N);
