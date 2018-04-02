@@ -8,6 +8,17 @@ in vec3 WorldPos;
 in vec3 LocalPos;
 in vec3 Normal;
 in float EyeVal;
+in float NormZ;
+
+uniform float eyeDisp      = -0.2;
+uniform float eyeScale     = 1.55;
+uniform vec3  eyeTranslate = vec3(0.21, 0.3, 0.0);
+uniform float eyeRotation  = 7.0;
+uniform float eyeWarp      = 1.0;
+uniform float eyeExponent  = 3.0;
+uniform float eyeThickness = 0.08;
+uniform float eyeGap       = 0.19;
+uniform float eyeFuzz      = 0.02;
 
 // material parameters
 uniform vec3  albedo;
@@ -21,16 +32,16 @@ uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
 uniform sampler2D   brdfLUT;
 //vert params
-uniform vec3 offsetPos;
+uniform vec3 offsetPos = vec3(0.0);
 
 // lights
 const float scale = 10.0f;
-const float height = 4.0f;
+const float lheight = 4.0f;
 const vec3 lightPositions[4] = vec3[4](
-      vec3(-scale, height, -scale),
-      vec3( scale, height, -scale),
-      vec3(-scale, height,  scale),
-      vec3( scale, height,  scale)
+      vec3(-scale, lheight, -scale),
+      vec3( scale, lheight, -scale),
+      vec3(-scale, lheight,  scale),
+      vec3( scale, lheight,  scale)
       );
 
 const float intensity = 100.f;
@@ -45,6 +56,8 @@ const vec3 lightColors[4] = vec3[4](
 const float PI = 3.14159265359;
 
 #include "shaders/include/noise_funcs.h"
+#include "shaders/include/owl_eye_funcs.h"
+#include "shaders/include/owl_bump_funcs.h"
 
 // ----------------------------------------------------------------------------
 float DistributionGGX(vec3 N, vec3 H, float roughness)
@@ -136,15 +149,56 @@ vec4 calcAlbedoDisp()
   return result;
 }
 
+float height(vec3 _pos, float _z)
+{
+  float rotation = radians(eyeRotation);
+  vec3 posA = eyePos(_pos, eyeScale, eyeTranslate, rotation);
+  _pos.x *= -1.0;
+  vec3 posB = eyePos(_pos, eyeScale, eyeTranslate, -rotation);
+  float maskA = eyeMask(posA, eyeFuzz, 0.7);
+  float maskB = eyeMask(posB, eyeFuzz, 0.7);
+  float bigMask = mask(maskA, maskB, eyeFuzz, _z);
+  return eyes(posA, posB, eyeFuzz, eyeGap, eyeThickness, eyeWarp, eyeExponent, maskA, maskB) * bigMask;
+}
+
+/**
+  * Compute the first difference around a point based on the surface normal.
+  * The parametric formula for a point on the plane can be given by
+  * x = (u, v, -(nx/nz)u - (ny/nz)v - (n.p)/nz)
+  *   = (u, v, au + bv + c)
+  */
+vec3 firstDifferenceEstimator(vec3 p, vec3 n, float _z, float delta) 
+{
+    float halfdelta = 0.5 * delta;
+    float invdelta  = 1.0 / delta;
+
+    vec3 offset = vec3(-halfdelta, halfdelta, 0.0);
+
+    float cxx = height(p + offset.xxz, _z);
+    float cxy = height(p + offset.xyz, _z);
+    float cyx = height(p + offset.yxz, _z);
+    float cyy = height(p + offset.yyz, _z);
+
+    return vec3(
+      0.5 * ((cyx - cxx) + (cyy - cxy)) * invdelta,
+      0.5 * ((cxy - cxx) + (cyy - cyx)) * invdelta,
+      1.0
+      );
+}
 
 void main()
 {
-
-  vec3 N = normalize(Normal);
-
   vec4 albedoDisp = calcAlbedoDisp();
-  vec3 eyeAlbedo = vec3(albedoDisp.xyz);
+  vec3 eyeAlbedo = mix(albedoDisp.xyz, vec3(0.7, 0.64, 0.68) * turb(offsetPos, 10), EyeVal*0.75);
 
+  float disp =  albedoDisp.w * 0.4;
+  // Now calculate the specular component
+  vec3 fd = normalize(vec3(eyeDisp, eyeDisp, 1.0) * firstDifferenceEstimator(LocalPos, Normal, NormZ, 0.05));
+
+  // Calls our normal perturbation function
+  vec3 n1 = perturbNormalVector(Normal, fd);
+
+  vec3 N = n1;//mix(normalize(Normal), n1, EyeVal);
   vec3 V = normalize(camPos - WorldPos);
   vec3 R = reflect(-V, N);
 
@@ -212,7 +266,8 @@ void main()
   const float MAX_REFLECTION_LOD = 4.0;
   vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
   vec2 envBRDF  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-  vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
+  float specularCoef = (0.5 + cnoise(offsetPos * 5.0) * 0.2) * (1 - EyeVal * 2.0);
+  vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y) * specularCoef;
 
   vec3 ambient  = (kD * diffuse + specular) * ao;
 

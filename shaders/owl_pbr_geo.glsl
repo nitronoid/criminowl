@@ -19,6 +19,7 @@ out vec3 WorldPos;
 out vec3 LocalPos;
 out vec3 Normal;
 out float EyeVal;
+out float NormZ;
 
 uniform mat4 M;
 uniform mat4 MVP;
@@ -49,36 +50,11 @@ float height(vec3 _pos, float _z)
   return eyes(posA, posB, eyeFuzz, eyeGap, eyeThickness, eyeWarp, eyeExponent, maskA, maskB) * bigMask;
 }
 
-/**
-  * Compute the first difference around a point based on the surface normal.
-  * The parametric formula for a point on the plane can be given by
-  * x = (u, v, -(nx/nz)u - (ny/nz)v - (n.p)/nz)
-  *   = (u, v, au + bv + c)
-  */
-vec3 firstDifferenceEstimator(vec3 p, vec3 n, float _z, float delta) 
-{
-    float halfdelta = 0.5 * delta;
-    float invdelta  = 1.0 / delta;
-
-    vec3 offset = vec3(-halfdelta, halfdelta, 0.0);
-
-    float cxx = height(p + offset.xxz, _z);
-    float cxy = height(p + offset.xyz, _z);
-    float cyx = height(p + offset.yxz, _z);
-    float cyy = height(p + offset.yyz, _z);
-
-    return vec3(
-      0.5 * ((cyx - cxx) + (cyy - cxy)) * invdelta,
-      0.5 * ((cxy - cxx) + (cyy - cyx)) * invdelta,
-      1.0
-      );
-}
-
 void main()
 {
   for(int i = 0; i < 3; i++)
   {
-    LocalPos = te_position[i];
+    NormZ = te_normal[i].z;
     Normal = normalize(te_normal[i]);
     TexCoords = te_uv[i];
 
@@ -89,13 +65,8 @@ void main()
 
     vec4 newPos = vec4(te_position[i] + Normal * h * eyeDisp, 1.0);
 
-    // Now calculate the specular component
-    vec3 fd = normalize(vec3(eyeDisp, eyeDisp, 1.0) * firstDifferenceEstimator(newPos.xyz, Normal, te_normal[i].z, 0.1));
-
-    // Calls our normal perturbation function
-    vec3 n1 = perturbNormalVector(Normal, fd);
-
-    Normal = mix(Normal, n1, h);
+    LocalPos = newPos.xyz;
+    
     WorldPos = vec3(M * newPos);
 
     gl_Position = MVP * newPos;
