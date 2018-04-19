@@ -23,7 +23,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 INCLUDEPATH += \
     /usr/local/include/glm/glm \
     /usr/local/include/glm \
-    /usr/local/include/stb \
+    $$PWD/stb \
     $$PWD/include \
     $$PWD/ui \
     $$PWD/shaders

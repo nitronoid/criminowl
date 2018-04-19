@@ -108,50 +108,6 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
   return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-vec4 calcAlbedoDisp()
-{
-  vec3 randP = LocalPos + offsetPos; 
-  float layers[] = float[](
-    // large darken
-    (1 - clamp(blendNoise(randPos(randP + vec3(1.0,2.0,0.0), 4, 5), 0.005) * 0.25 + 0.25, 0.0, 1.0)),
-    // thin darkening noise
-    turb(randP, 4) * blendNoise(randPos(LocalPos, 2, 15), 0.01) * 0.5,
-    // small variance
-    turb(randP, 4) * blendNoise(randP, 2) * 2,
-    // light brushed
-    brushed(randP, 0.25, vec3(20.0,1.0,1.0)) * slicednoise(randPos(randP, 2), 0.5, 5, 0.2),
-    // dark brushed
-    brushed(randP, 0.5, vec3(5.0,25.0,1.0)) * slicednoise(randPos(randP, 3), 0.6, 3, 0.5),
-    // rough wood
-    veins(randP, 6, 10) * slicednoise(randPos(randP, 1), 0.3, 3, 1.5),
-    // veins
-    veins(randP, 4, 2) * slicednoise(randPos(randP, 4), 1, 1.25, 0.15) * 2,
-    // wood chips
-    slicednoise(randP, 2.0, 0.04, 0.4)
-  );
-
-  vec3 cols[] = vec3[](
-    vec3(0.016, 0.004, 0.0005),
-    vec3(0.03, 0.009, 0.0),
-    vec3(0.08, 0.002, 0.0),
-    vec3(0.703, 0.188, 0.108),
-    vec3(0.707, 0.090, 0.021),
-    vec3(0.960, 0.436, 0.149),
-    vec3(0.843, 0.326, 0.176),
-    vec3(1, 0.31, 0.171)
-  );
-  
-  vec4 result = vec4(0.093, 0.02, 0.003, 0.0);
-
-  for (int i = 0; i < 8; ++i)
-  {
-    result.xyz = mix(result.xyz, cols[i], layers[i]);
-    result.w += layers[i];
-  }
-
-  return result;
-}
-
 float height(vec3 _pos, float _z)
 {
   float rotation = radians(eyeRotation);
@@ -191,7 +147,7 @@ vec3 firstDifferenceEstimator(vec3 p, vec3 n, float _z, float delta)
 
 void main()
 {
-  vec4 albedoDisp = texture(surfaceMap, WorldPos);//calcAlbedoDisp();
+  vec4 albedoDisp = texture(surfaceMap, LocalPos * 0.25);
   vec3 eyeAlbedo = mix(albedoDisp.xyz, vec3(0.7, 0.64, 0.68) * turb(offsetPos, 10), EyeVal*0.75);
 
   //float disp =  albedoDisp.w * 0.4;
@@ -248,14 +204,12 @@ void main()
     float NdotL = max(dot(N, L), 0.0);
 
     // add to outgoing radiance Lo
-    Lo += (kD * eyeAlbedo / PI + brdf) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+    Lo += (kD * eyeAlbedo / PI + brdf) * radiance * NdotL;
   }
 
 
   vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
-  // ambient lighting (note that the next IBL tutorial will replace
-  // this ambient lighting with environment lighting).
   vec3 kS = F;
   vec3 kD = 1.0 - kS;
   kD *= (1.0 - metallic);

@@ -27,7 +27,6 @@ void main(void)
   pos.x *= -1.0;
   vec3 posB = eyePos(pos, eyeScale, eyeTranslate, -rotation);
 
-
   float maskA = eyeMask(posA, eyeFuzz, 0.7);
   float maskB = eyeMask(posB, eyeFuzz, 0.7);
   float bigMask = mask(maskA, maskB, eyeFuzz, v_normal[ID].z);
