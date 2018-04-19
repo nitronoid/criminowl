@@ -46,6 +46,7 @@ private:
   void initIrradianceMap(const Mesh &_cube, const MeshVBO &_vbo);
   void initPrefilteredMap(const Mesh &_cube, const MeshVBO &_vbo);
   void initBrdfLUTMap(const Mesh &_plane, const MeshVBO &_vbo);
+  void initNoiseMap(const Mesh &_plane, const MeshVBO &_vbo);
 
   std::array<QMatrix4x4, 6>  m_captureViews;
   QMatrix4x4 m_captureProjection;
@@ -55,6 +56,7 @@ private:
   std::unique_ptr<QOpenGLTexture> m_irradianceMap;
   std::unique_ptr<QOpenGLTexture> m_prefilteredMap;
   std::unique_ptr<QOpenGLTexture> m_brdfLUTMap;
+  std::unique_ptr<QOpenGLTexture> m_noiseMap;
 
   glm::vec3 m_albedo;
   QOpenGLContext* m_context;

@@ -1,0 +1,5 @@
+{
+    "Name" : "owl_noise",
+    "Vertex" : "shaders/owl_noise_vert.glsl",
+    "Fragment" : "shaders/owl_noise_frag.glsl"
+}

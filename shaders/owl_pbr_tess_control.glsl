@@ -37,7 +37,7 @@ void main(void)
   tc_uv[ID] = v_uv[ID];
 
   float tessMask = mask(eyeMask(posA, eyeFuzz, 1.0), eyeMask(posB, eyeFuzz, 1.0), eyeFuzz, v_normal[ID].z);
-  int tessLevel = 1 + int(ceil(31 * smoothstep(0.0, 1.0, tessMask)));
+  int tessLevel = 1 + int(ceil(15 * smoothstep(0.0, 1.0, tessMask)));
 
   gl_TessLevelInner[0] = tessLevel;
   gl_TessLevelOuter[0] = tessLevel;

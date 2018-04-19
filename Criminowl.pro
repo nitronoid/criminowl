@@ -70,7 +70,6 @@ OTHER_FILES += \
     $$files(shaderPrograms/*, true) \
     $$files(models/*, true)
 
-
 FORMS += ui/mainwindow.ui
 
 linux:{

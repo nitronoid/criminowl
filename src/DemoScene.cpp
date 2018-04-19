@@ -72,7 +72,7 @@ void DemoScene::keyPress(QKeyEvent* io_event)
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::initMaterials()
 {
-  m_material.reset(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, context(), {0.5f, 0.0f, 0.0f}, 1.0f, 0.35f, 0.0f));
+  m_material.reset(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, context(), {0.5f, 0.0f, 0.0f}, 1.0f, 0.35f, 1.0));
 
   auto name = m_shaderLib->loadShaderProg(m_material->shaderFileName());
   m_material->setShaderName(name);

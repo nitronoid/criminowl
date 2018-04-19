@@ -21,6 +21,7 @@ uniform float eyeGap       = 0.19;
 uniform float eyeFuzz      = 0.02;
 
 // material parameters
+uniform sampler3D surfaceMap;
 uniform vec3  albedo;
 uniform float metallic;
 uniform float roughness;
@@ -33,6 +34,7 @@ uniform samplerCube prefilterMap;
 uniform sampler2D   brdfLUT;
 //vert params
 uniform vec3 offsetPos = vec3(0.0);
+
 
 // lights
 const float scale = 10.0f;
@@ -55,7 +57,8 @@ const vec3 lightColors[4] = vec3[4](
 // Define pi
 const float PI = 3.14159265359;
 
-#include "shaders/include/noise_funcs.h"
+#include "shaders/include/gpu_noise_lib.h"
+#include "shaders/include/owl_noise_funcs.h"
 #include "shaders/include/owl_eye_funcs.h"
 #include "shaders/include/owl_bump_funcs.h"
 
@@ -188,17 +191,17 @@ vec3 firstDifferenceEstimator(vec3 p, vec3 n, float _z, float delta)
 
 void main()
 {
-  vec4 albedoDisp = calcAlbedoDisp();
+  vec4 albedoDisp = texture(surfaceMap, WorldPos);//calcAlbedoDisp();
   vec3 eyeAlbedo = mix(albedoDisp.xyz, vec3(0.7, 0.64, 0.68) * turb(offsetPos, 10), EyeVal*0.75);
 
-  float disp =  albedoDisp.w * 0.4;
+  //float disp =  albedoDisp.w * 0.4;
   // Now calculate the specular component
   vec3 fd = normalize(vec3(eyeDisp, eyeDisp, 1.0) * firstDifferenceEstimator(LocalPos, Normal, NormZ, 0.05));
 
   // Calls our normal perturbation function
   vec3 n1 = perturbNormalVector(Normal, fd);
 
-  vec3 N = n1;//mix(normalize(Normal), n1, EyeVal);
+  vec3 N = mix(normalize(Normal), n1, EyeVal);
   vec3 V = normalize(camPos - WorldPos);
   vec3 R = reflect(-V, N);
 
@@ -251,8 +254,6 @@ void main()
 
   vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
-
-
   // ambient lighting (note that the next IBL tutorial will replace
   // this ambient lighting with environment lighting).
   vec3 kS = F;
@@ -266,7 +267,7 @@ void main()
   const float MAX_REFLECTION_LOD = 4.0;
   vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
   vec2 envBRDF  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-  float specularCoef = (0.5 + cnoise(offsetPos * 5.0) * 0.2) * (1 - EyeVal * 2.0);
+  float specularCoef = (0.5 + Perlin3D(offsetPos * 5.0) * 0.2) * (1 - EyeVal * 2.0);
   vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y) * specularCoef;
 
   vec3 ambient  = (kD * diffuse + specular) * ao;
