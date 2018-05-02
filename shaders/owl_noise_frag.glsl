@@ -3,7 +3,7 @@
 layout(location=0) out vec4 FragColor;
 in vec2 TexCoords;
 
-const float scale = 4.0;
+const float scale = 5.0;
 
 uniform float Zdepth;
 uniform vec3 offsetPos = vec3(0.0);

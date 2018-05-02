@@ -22,6 +22,7 @@ uniform float eyeFuzz      = 0.02;
 
 // material parameters
 uniform sampler3D surfaceMap;
+uniform sampler3D normalMap;
 uniform vec3  albedo;
 uniform float metallic;
 uniform float roughness;
@@ -108,56 +109,23 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
   return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-float height(vec3 _pos, float _z)
-{
-  float rotation = radians(eyeRotation);
-  vec3 posA = eyePos(_pos, eyeScale, eyeTranslate, rotation);
-  _pos.x *= -1.0;
-  vec3 posB = eyePos(_pos, eyeScale, eyeTranslate, -rotation);
-  float maskA = eyeMask(posA, eyeFuzz, 0.7);
-  float maskB = eyeMask(posB, eyeFuzz, 0.7);
-  float bigMask = mask(maskA, maskB, eyeFuzz, _z);
-  return eyes(posA, posB, eyeFuzz, eyeGap, eyeThickness, eyeWarp, eyeExponent, maskA, maskB) * bigMask;
-}
-
-/**
-  * Compute the first difference around a point based on the surface normal.
-  * The parametric formula for a point on the plane can be given by
-  * x = (u, v, -(nx/nz)u - (ny/nz)v - (n.p)/nz)
-  *   = (u, v, au + bv + c)
-  */
-vec3 firstDifferenceEstimator(vec3 p, vec3 n, float _z, float delta) 
-{
-    float halfdelta = 0.5 * delta;
-    float invdelta  = 1.0 / delta;
-
-    vec3 offset = vec3(-halfdelta, halfdelta, 0.0);
-
-    float cxx = height(p + offset.xxz, _z);
-    float cxy = height(p + offset.xyz, _z);
-    float cyx = height(p + offset.yxz, _z);
-    float cyy = height(p + offset.yyz, _z);
-
-    return vec3(
-      0.5 * ((cyx - cxx) + (cyy - cxy)) * invdelta,
-      0.5 * ((cxy - cxx) + (cyy - cyx)) * invdelta,
-      1.0
-      );
-}
-
 void main()
 {
-  vec4 albedoDisp = texture(surfaceMap, LocalPos * 0.25);
+  float normalStrength = 0.05;
+  vec3 coord = LocalPos * 0.2 + vec3(0.5, 0.55, 0.5);
+  // Extract the normal from the normal map (rescale to [-1,1]
+  vec3 tgt = normalize((texture(normalMap, coord).rgb * 2.0 - 1.0) * normalStrength);
+
+  // The source is just up in the Z-direction
+  vec3 src = vec3(0.0, 0.0, 1.0);
+
+  // Perturb the normal according to the target
+  vec3 np = rotateVector(src, tgt, Normal);
+
+  vec4 albedoDisp = texture(surfaceMap, coord);
   vec3 eyeAlbedo = mix(albedoDisp.xyz, vec3(0.7, 0.64, 0.68) * turb(offsetPos, 10), EyeVal*0.75);
 
-  //float disp =  albedoDisp.w * 0.4;
-  // Now calculate the specular component
-  vec3 fd = normalize(vec3(eyeDisp, eyeDisp, 1.0) * firstDifferenceEstimator(LocalPos, Normal, NormZ, 0.05));
-
-  // Calls our normal perturbation function
-  vec3 n1 = perturbNormalVector(Normal, fd);
-
-  vec3 N = mix(normalize(Normal), n1, EyeVal);
+  vec3 N = mix(np, Normal, EyeVal);
   vec3 V = normalize(camPos - WorldPos);
   vec3 R = reflect(-V, N);
 

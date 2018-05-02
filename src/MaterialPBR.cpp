@@ -45,6 +45,7 @@ void MaterialPBR::init()
   }
   initBrdfLUTMap(plane, vbo);
   initNoiseMap(plane, vbo);
+  initNormalMap(plane, vbo);
 
   shaderPtr->bind();
   shaderPtr->setPatchVertexCount(3);
@@ -53,6 +54,7 @@ void MaterialPBR::init()
   shaderPtr->setUniformValue("prefilterMap", 1);
   shaderPtr->setUniformValue("brdfLUT", 2);
   shaderPtr->setUniformValue("surfaceMap", 3);
+  shaderPtr->setUniformValue("normalMap", 4);
   shaderPtr->setUniformValue("albedo", QVector3D{m_albedo.x, m_albedo.y, m_albedo.z});
   shaderPtr->setUniformValue("ao", m_ao);
   shaderPtr->setUniformValue("roughness", m_roughness);
@@ -72,8 +74,8 @@ void MaterialPBR::update()
   m_irradianceMap->bind(0);
   m_prefilteredMap->bind(1);
   m_brdfLUTMap->bind(2);
-
   m_noiseMap->bind(3);
+  m_normalMap->bind(4);
 
   auto shaderPtr = m_shaderLib->getShader(m_shaderName);
   auto eye = m_cam->getCameraEye();
@@ -371,3 +373,48 @@ void MaterialPBR::initNoiseMap(const Mesh &_plane, const MeshVBO &_vbo)
   fbo->release();
 }
 
+
+void MaterialPBR::initNormalMap(const Mesh &_plane, const MeshVBO &_vbo)
+{
+  static constexpr auto RES = 1024;
+  using tex = QOpenGLTexture;
+  auto defaultFBO = m_context->defaultFramebufferObject();
+  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
+
+  m_normalMap.reset(new QOpenGLTexture(QOpenGLTexture::Target3D));
+  m_normalMap->create();
+  m_normalMap->bind();
+  m_normalMap->setSize(RES, RES, RES);
+  m_normalMap->setFormat(tex::RGB16F);
+  m_normalMap->setMinMagFilters(tex::Linear, tex::Linear);
+  m_normalMap->setWrapMode(tex::Repeat);
+  m_normalMap->allocateStorage();
+
+  auto normalShaderName = m_shaderLib->loadShaderProg("shaderPrograms/owl_normal.json");
+  auto normalShader = m_shaderLib->getShader(normalShaderName);
+
+  auto fbo = std::make_unique<QOpenGLFramebufferObject>(RES, RES, QOpenGLFramebufferObject::Depth, GL_TEXTURE_3D);
+  funcs->glViewport(0, 0, RES, RES);
+  normalShader->bind();
+  {
+    using namespace MeshAttributes;
+    normalShader->enableAttributeArray(VERTEX);
+    normalShader->setAttributeBuffer(VERTEX, GL_FLOAT, _vbo.offset(VERTEX), 3);
+    normalShader->enableAttributeArray(UV);
+    normalShader->setAttributeBuffer(UV, GL_FLOAT, _vbo.offset(UV), 2);
+  }
+  normalShader->setUniformValue("bump", 0);
+  m_noiseMap->bind(0);
+
+  static constexpr auto denom = 1.f / static_cast<float>(RES);
+  for (int i = 0; i < RES; ++i)
+  {
+    normalShader->setUniformValue("Zdepth", i * denom);
+    funcs->glFramebufferTexture3D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_3D, m_normalMap->textureId(), 0, i);
+    funcs->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    funcs->glDrawElements(GL_TRIANGLES, _plane.getNIndicesData(), GL_UNSIGNED_SHORT, nullptr);
+  }
+
+  funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
+  fbo->release();
+}
