@@ -332,7 +332,7 @@ void MaterialPBR::initBrdfLUTMap(const Mesh &_plane, const MeshVBO &_vbo)
 
 void MaterialPBR::initNoiseMap(const Mesh &_plane, const MeshVBO &_vbo)
 {
-  static constexpr auto RES = 1024;
+  static constexpr auto RES = 512;
   using tex = QOpenGLTexture;
   auto defaultFBO = m_context->defaultFramebufferObject();
   auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
@@ -371,12 +371,13 @@ void MaterialPBR::initNoiseMap(const Mesh &_plane, const MeshVBO &_vbo)
 
   funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
   fbo->release();
+  std::printf("\a\n");
 }
 
 
 void MaterialPBR::initNormalMap(const Mesh &_plane, const MeshVBO &_vbo)
 {
-  static constexpr auto RES = 1024;
+  static constexpr auto RES = 512;
   using tex = QOpenGLTexture;
   auto defaultFBO = m_context->defaultFramebufferObject();
   auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();

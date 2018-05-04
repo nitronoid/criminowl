@@ -111,21 +111,21 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 
 void main()
 {
-  float normalStrength = 0.05;
+  float normalStrength = 0.2;
   vec3 coord = LocalPos * 0.2 + vec3(0.5, 0.55, 0.5);
   // Extract the normal from the normal map (rescale to [-1,1]
-  vec3 tgt = normalize((texture(normalMap, coord).rgb * 2.0 - 1.0) * normalStrength);
+  vec3 tgt = normalize(mix(Normal, texture(normalMap, coord).rgb * 2.0 - 1.0, normalStrength));
 
   // The source is just up in the Z-direction
   vec3 src = vec3(0.0, 0.0, 1.0);
 
   // Perturb the normal according to the target
-  vec3 np = rotateVector(src, tgt, Normal);
+  vec3 np = rotateVector(Normal, tgt, Normal);
 
   vec4 albedoDisp = texture(surfaceMap, coord);
   vec3 eyeAlbedo = mix(albedoDisp.xyz, vec3(0.7, 0.64, 0.68) * turb(offsetPos, 10), EyeVal*0.75);
 
-  vec3 N = mix(np, Normal, EyeVal);
+  vec3 N = np;//mix(np, Normal, EyeVal);
   vec3 V = normalize(camPos - WorldPos);
   vec3 R = reflect(-V, N);
 

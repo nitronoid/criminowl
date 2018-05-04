@@ -1,7 +1,6 @@
 
 float noiseFunction(vec3 pos)
 {
-//  return texture(pnoiseMap, pos).r;
   return SimplexPerlin3D(pos);
 }
 
