@@ -371,7 +371,6 @@ void MaterialPBR::initNoiseMap(const Mesh &_plane, const MeshVBO &_vbo)
 
   funcs->glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
   fbo->release();
-  std::printf("\a\n");
 }
 
 

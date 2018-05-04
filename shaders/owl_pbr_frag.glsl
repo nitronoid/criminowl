@@ -114,16 +114,16 @@ void main()
   float normalStrength = 0.2;
   vec3 coord = LocalPos * 0.2 + vec3(0.5, 0.55, 0.5);
   // Extract the normal from the normal map (rescale to [-1,1]
-  vec3 tgt = normalize(mix(Normal, texture(normalMap, coord).rgb * 2.0 - 1.0, normalStrength));
+  vec3 tgt = texture(normalMap, coord).rgb * 2.0 - 1.0;
 
   // The source is just up in the Z-direction
   vec3 src = vec3(0.0, 0.0, 1.0);
 
   // Perturb the normal according to the target
-  vec3 np = rotateVector(Normal, tgt, Normal);
+  vec3 np = normalize(mix(Normal, rotateVector(src, tgt, Normal), normalStrength));
 
   vec4 albedoDisp = texture(surfaceMap, coord);
-  vec3 eyeAlbedo = mix(albedoDisp.xyz, vec3(0.7, 0.64, 0.68) * turb(offsetPos, 10), EyeVal*0.75);
+  vec3 eyeAlbedo = mix(albedoDisp.xyz, vec3(0.4, 0.34, 0.38) * turb(offsetPos, 10), EyeVal);
 
   vec3 N = np;//mix(np, Normal, EyeVal);
   vec3 V = normalize(camPos - WorldPos);
@@ -132,7 +132,8 @@ void main()
 
   // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
   // of 0.04 and if it's a metal, use their albedo color as F0 (metallic workflow)
-  vec3 F0 = vec3(0.04);
+  float baseSpec = 0.1 + Perlin3D(offsetPos * 5.0) * 0.2 * (1 - EyeVal * 2.0);
+  vec3 F0 = vec3(baseSpec);
   F0 = mix(F0, eyeAlbedo, metallic);
 
   // reflectance equation
@@ -189,8 +190,7 @@ void main()
   const float MAX_REFLECTION_LOD = 4.0;
   vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
   vec2 envBRDF  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-  float specularCoef = (0.5 + Perlin3D(offsetPos * 5.0) * 0.2) * (1 - EyeVal * 2.0);
-  vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y) * specularCoef;
+  vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 
   vec3 ambient  = (kD * diffuse + specular) * ao;
 
