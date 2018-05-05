@@ -1,20 +1,20 @@
 #version 410 core
 
 layout(location=0) out vec4 FragColor;
-in vec2 TexCoords;
+in vec2 vs_texCoords;
 
-const float scale = 5.0;
+const float k_scale = 5.0;
 
-uniform float Zdepth;
-uniform vec3 offsetPos = vec3(0.0);
+uniform float u_zDepth;
+uniform vec3 u_offsetPos = vec3(0.0);
 
 #include "shaders/include/gpu_noise_lib.h"
 #include "shaders/include/owl_noise_funcs.h"
 // ----------------------------------------------------------------------------
 vec4 calcAlbedoDisp()
 {
-  vec3 pos = vec3(TexCoords * scale, Zdepth * scale);
-  vec3 randP = pos + offsetPos; 
+  vec3 pos = vec3(vs_texCoords * k_scale, u_zDepth * k_scale);
+  vec3 randP = pos + u_offsetPos;
   float layers[] = float[](
     // large darken
     (1 - clamp(blendNoise(randPos(randP + vec3(1.0,2.0,0.0), 4, 5), 0.005) * 0.25 + 0.25, 0.0, 1.0)),

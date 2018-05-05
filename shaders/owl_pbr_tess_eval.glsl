@@ -2,20 +2,26 @@
 
 layout(triangles, equal_spacing, cw) in;
 
-in vec3  tc_position[];
-in vec3  tc_normal[];
-in vec2  tc_uv[];
+in struct
+{
+  vec3 position;
+  vec3 normal;
+  vec2 uv;
+} tc_out[];
 
-out vec3  te_position;
-out vec3  te_normal;
-out vec2  te_uv;
+out struct
+{
+  vec3 position;
+  vec3 normal;
+  vec2 uv;
+} te_out;
 
 uniform mat4 MVP;
 
 void main(void)
 {
-  te_normal   = (gl_TessCoord.x * tc_normal[0]   + gl_TessCoord.y * tc_normal[1]   + gl_TessCoord.z * tc_normal[2]);
-  te_uv       = (gl_TessCoord.x * tc_uv[0]       + gl_TessCoord.y * tc_uv[1]       + gl_TessCoord.z * tc_uv[2]);
-  te_position = (gl_TessCoord.x * tc_position[0] + gl_TessCoord.y * tc_position[1] + gl_TessCoord.z * tc_position[2]);
-  gl_Position = MVP * vec4(te_position, 1.0);
+  te_out.normal   = (gl_TessCoord.x * tc_out[0].normal   + gl_TessCoord.y * tc_out[1].normal   + gl_TessCoord.z * tc_out[2].normal);
+  te_out.uv       = (gl_TessCoord.x * tc_out[0].uv       + gl_TessCoord.y * tc_out[1].uv       + gl_TessCoord.z * tc_out[2].uv);
+  te_out.position = (gl_TessCoord.x * tc_out[0].position + gl_TessCoord.y * tc_out[1].position + gl_TessCoord.z * tc_out[2].position);
+  gl_Position = MVP * vec4(te_out.position, 1.0);
 }

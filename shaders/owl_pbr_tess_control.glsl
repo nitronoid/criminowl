@@ -2,18 +2,25 @@
 
 layout(vertices = 3) out;
 
-in vec3 v_position[];
-in vec3 v_normal[];
-in vec2 v_uv[];
+in struct
+{
+  vec3 position;
+  vec3 normal;
+  vec2 uv;
+} vs_out[];
 
-out vec3 tc_position[];
-out vec3 tc_normal[];
-out vec2 tc_uv[];
+out struct
+{
+  vec3 position;
+  vec3 normal;
+  vec2 uv;
+} tc_out[];
 
-uniform float eyeRotation = 7.0;
-uniform float eyeScale     = 1.55;
-uniform vec3  eyeTranslate = vec3(0.21, 0.3, 0.0);
-uniform float eyeFuzz      = 0.02;
+
+uniform float u_eyeRotation = 7.0;
+uniform float u_eyeScale     = 1.55;
+uniform vec3  u_eyeTranslate = vec3(0.21, 0.3, 0.0);
+uniform float u_eyeFuzz      = 0.02;
 
 #include "shaders/include/owl_eye_funcs.h"
 #define ID gl_InvocationID
@@ -21,21 +28,21 @@ uniform float eyeFuzz      = 0.02;
 
 void main(void)
 {
-  vec3 pos = v_position[ID];
-  float rotation = radians(eyeRotation);
-  vec3 posA = eyePos(pos, eyeScale, eyeTranslate, rotation);
+  vec3 pos = vs_out[ID].position;
+  float rotation = radians(u_eyeRotation);
+  vec3 posA = eyePos(pos, u_eyeScale, u_eyeTranslate, rotation);
   pos.x *= -1.0;
-  vec3 posB = eyePos(pos, eyeScale, eyeTranslate, -rotation);
+  vec3 posB = eyePos(pos, u_eyeScale, u_eyeTranslate, -rotation);
 
-  float maskA = eyeMask(posA, eyeFuzz, 0.7);
-  float maskB = eyeMask(posB, eyeFuzz, 0.7);
-  float bigMask = mask(maskA, maskB, eyeFuzz, v_normal[ID].z);
+  float maskA = eyeMask(posA, u_eyeFuzz, 0.7);
+  float maskB = eyeMask(posB, u_eyeFuzz, 0.7);
+  float bigMask = mask(maskA, maskB, u_eyeFuzz, vs_out[ID].normal.z);
 
-  tc_position[ID] = v_position[ID];
-  tc_normal[ID] = v_normal[ID];
-  tc_uv[ID] = v_uv[ID];
+  tc_out[ID].position = vs_out[ID].position;
+  tc_out[ID].normal = vs_out[ID].normal;
+  tc_out[ID].uv = vs_out[ID].uv;
 
-  float tessMask = mask(eyeMask(posA, eyeFuzz, 1.0), eyeMask(posB, eyeFuzz, 1.0), eyeFuzz, v_normal[ID].z);
+  float tessMask = mask(eyeMask(posA, u_eyeFuzz, 1.0), eyeMask(posB, u_eyeFuzz, 1.0), u_eyeFuzz, vs_out[ID].normal.z);
   int tessLevel = 1 + int(ceil(15 * smoothstep(0.0, 1.0, tessMask)));
 
   gl_TessLevelInner[0] = tessLevel;

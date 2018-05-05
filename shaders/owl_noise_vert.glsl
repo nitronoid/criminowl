@@ -1,12 +1,12 @@
 #version 410 core
 
-layout (location = 0) in vec3 inVert;
-layout (location = 1) in vec2 inUV;
+layout (location = 0) in vec3 in_vert;
+layout (location = 1) in vec2 in_uv;
 
-out vec2 TexCoords;
+out vec2 vs_texCoords;
 
 void main()
 {
-  TexCoords = inUV;
-  gl_Position = vec4(inVert, 1.0);
+  vs_texCoords = in_uv;
+  gl_Position = vec4(in_vert, 1.0);
 }
