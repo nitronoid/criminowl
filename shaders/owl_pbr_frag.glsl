@@ -49,7 +49,7 @@ const vec3 k_lightColors[4] = vec3[4](
 // Define k_PI
 const float k_PI = 3.14159265359;
 
-#include "shaders/include/gpu_noise_lib.h"
+#include "shaders/include/perlin_noise.h"
 #include "shaders/include/owl_noise_funcs.h"
 #include "shaders/include/owl_eye_funcs.h"
 #include "shaders/include/owl_bump_funcs.h"
@@ -102,7 +102,7 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 
 void main()
 {
-  float normalStrength = 0.2;
+  float normalStrength = 0.3;
   vec3 coord = go_out.localPos * 0.2 + vec3(0.5, 0.55, 0.5);
   // Extract the normal from the normal map (rescale to [-1,1]
   vec3 tgt = texture(u_normalMap, coord).rgb * 2.0 - 1.0;
@@ -123,7 +123,7 @@ void main()
 
   // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
   // of 0.04 and if it's a metal, use their albedo color as F0 (metallic workflow)
-  float baseSpec = 0.1 + Perlin3D(u_offsetPos * 5.0) * 0.2 * (1 - go_out.eyeVal * 2.0);
+  float baseSpec = 0.1;// + cnoise(u_offsetPos * 5.0) * 0.2 * (1 - go_out.eyeVal * 2.0);
   vec3 F0 = vec3(baseSpec);
   F0 = mix(F0, eyeAlbedo, u_metallic);
 

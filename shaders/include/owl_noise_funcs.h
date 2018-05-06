@@ -1,7 +1,7 @@
 
 float noiseFunction(vec3 pos)
 {
-  return SimplexPerlin3D(pos);
+  return cnoise(pos);
 }
 
 float turb (vec3 _pos, float _frequency)

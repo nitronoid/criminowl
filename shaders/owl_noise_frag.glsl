@@ -6,18 +6,18 @@ in vec2 vs_texCoords;
 const float k_scale = 5.0;
 
 uniform float u_zDepth;
-uniform vec3 u_offsetPos = vec3(0.0);
+uniform vec3 u_offsetPos = vec3(1.0);
 
-#include "shaders/include/gpu_noise_lib.h"
+#include "shaders/include/perlin_noise.h"
 #include "shaders/include/owl_noise_funcs.h"
 // ----------------------------------------------------------------------------
 vec4 calcAlbedoDisp()
 {
   vec3 pos = vec3(vs_texCoords * k_scale, u_zDepth * k_scale);
-  vec3 randP = pos + u_offsetPos;
+  vec3 randP = (pos + u_offsetPos);
   float layers[] = float[](
     // large darken
-    (1 - clamp(blendNoise(randPos(randP + vec3(1.0,2.0,0.0), 4, 5), 0.005) * 0.25 + 0.25, 0.0, 1.0)),
+    1 - clamp(1.0,0.0,blendNoise(randPos(randP + vec3(1,0,0), 4, 5), 0.005)),
     // thin darkening noise
     turb(randP, 4) * blendNoise(randPos(pos, 2, 15), 0.01) * 0.5,
     // small variance
@@ -35,7 +35,7 @@ vec4 calcAlbedoDisp()
   );
 
   vec3 cols[] = vec3[](
-    vec3(0.016, 0.004, 0.0005),
+    vec3(0.036, 0.008, 0.001),
     vec3(0.03, 0.009, 0.0),
     vec3(0.08, 0.002, 0.0),
     vec3(0.703, 0.188, 0.108),
