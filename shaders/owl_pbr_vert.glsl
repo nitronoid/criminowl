@@ -8,7 +8,8 @@ layout (location = 2) in vec3 in_normal;
 /// @brief the in uv
 layout (location = 1) in vec2 in_uv;
 
-layout (std430, binding = 0) buffer morph_targets
+// Not going to write to the targets so they're read-only
+layout (std430, binding = 0) readonly buffer morph_targets
 {
   vec4 targets[];
 };
@@ -18,6 +19,7 @@ out struct
   vec3 position;
   vec3 base_position;
   vec3 normal;
+  vec3 base_normal;
   vec2 uv;
 } vs_out;
 
@@ -49,5 +51,6 @@ void main()
   vs_out.position = targetPosition;
   vs_out.base_position = in_vert;
   vs_out.normal = targetNormal;
+  vs_out.base_normal = in_normal;
   vs_out.uv = in_uv;
 }

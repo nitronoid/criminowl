@@ -63,9 +63,9 @@ void MaterialPBR::init()
   }
   initBrdfLUTMap(plane, vbo);
   // Generate the albedo map
-  generate3DTexture(plane, vbo, m_albedoMap, 256, "shaderPrograms/owl_noise.json");
+  generate3DTexture(plane, vbo, m_albedoMap, 256, "shaderPrograms/owl_noise.json", QOpenGLTexture::RGBA16F);
   // Generate the normal map
-  generate3DTexture(plane, vbo, m_normalMap, 256, "shaderPrograms/owl_normal.json",
+  generate3DTexture(plane, vbo, m_normalMap, 256, "shaderPrograms/owl_normal.json", QOpenGLTexture::RGB16F,
                     [&bumpMap = m_albedoMap](auto shader)
   {
     shader->setUniformValue("u_bumpMap", 0);
@@ -87,6 +87,9 @@ void MaterialPBR::init()
   shaderPtr->setUniformValue("u_metallic", m_metallic);
   shaderPtr->setUniformValue("u_baseSpec", m_baseSpec);
   shaderPtr->setUniformValue("u_normalStrength", m_normalStrength);
+  m_context->versionFunctions<QOpenGLFunctions_4_3_Core>()->glUniformSubroutinesuiv(GL_TESS_EVALUATION_SHADER, 1, &m_tessType);
+  shaderPtr->setUniformValue("u_tessLevelInner", m_tessLevelInner);
+  shaderPtr->setUniformValue("u_tessLevelOuter", m_tessLevelOuter);
 
 
   m_last = std::chrono::high_resolution_clock::now();
@@ -109,7 +112,7 @@ void MaterialPBR::update()
   auto now = high_resolution_clock::now();
   m_time += (duration_cast<milliseconds>(now - m_last).count() * !m_paused);
   m_last = now;
-  const auto blend = std::fmod(m_time * 0.001f * 25.f, 8.0f * 25.f);
+  const auto blend = std::fmod(m_time * 0.001f * m_morphTargetFPS, static_cast<float>(m_morphTargetCount));
   shaderPtr->setUniformValue("u_blend", blend);
   auto eye = m_cam->getCameraEye();
   shaderPtr->setUniformValue("u_camPos", QVector3D{eye.x, eye.y, eye.z});
@@ -141,10 +144,7 @@ void MaterialPBR::setMetallic(const float _metallic) noexcept
   shaderPtr->setUniformValue("u_metallic", m_metallic);
 }
 
-float MaterialPBR::getMetallic() const noexcept
-{
-  return m_metallic;
-}
+float MaterialPBR::getMetallic() const noexcept { return m_metallic; }
 
 void MaterialPBR::setRoughness(const float _roughness) noexcept
 {
@@ -153,10 +153,7 @@ void MaterialPBR::setRoughness(const float _roughness) noexcept
   shaderPtr->setUniformValue("u_roughness", m_roughness);
 }
 
-float MaterialPBR::getRoughness() const noexcept
-{
-  return m_roughness;
-}
+float MaterialPBR::getRoughness() const noexcept { return m_roughness; }
 
 void MaterialPBR::setBaseSpec(const float _baseSpec) noexcept
 {
@@ -165,10 +162,7 @@ void MaterialPBR::setBaseSpec(const float _baseSpec) noexcept
   shaderPtr->setUniformValue("u_baseSpec", m_baseSpec);
 }
 
-float MaterialPBR::getBaseSpec() const noexcept
-{
-  return m_baseSpec;
-}
+float MaterialPBR::getBaseSpec() const noexcept { return m_baseSpec; }
 
 void MaterialPBR::setNormalStrength(const float _normalStrength) noexcept
 {
@@ -177,26 +171,128 @@ void MaterialPBR::setNormalStrength(const float _normalStrength) noexcept
   shaderPtr->setUniformValue("u_normalStrength", m_normalStrength);
 }
 
-float MaterialPBR::getNormalStrength() const noexcept
+float MaterialPBR::getNormalStrength() const noexcept { return m_normalStrength; }
+
+void MaterialPBR::setPaused(const bool _paused) noexcept { m_paused = _paused; }
+
+bool MaterialPBR::getPaused() const noexcept { return m_paused; }
+
+void MaterialPBR::setTessType(const int _tessType) noexcept
 {
-  return m_normalStrength;
+  m_tessType = static_cast<GLuint>(_tessType);
+  m_context->versionFunctions<QOpenGLFunctions_4_3_Core>()->glUniformSubroutinesuiv(GL_TESS_EVALUATION_SHADER, 1, &m_tessType);
 }
 
-void MaterialPBR::setPaused(const bool _paused) noexcept
+void MaterialPBR::setTessLevelInner(const int _tessLevel) noexcept
 {
-  m_paused = _paused;
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_tessLevelInner = _tessLevel - 1;
+  shaderPtr->setUniformValue("u_tessLevelInner", m_tessLevelInner);
 }
 
-bool MaterialPBR::getPaused() const noexcept
+int MaterialPBR::getTessLevelInner() const noexcept { return m_tessLevelInner; }
+
+void MaterialPBR::setTessLevelOuter(const int _tessLevel) noexcept
 {
-  return m_paused;
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_tessLevelOuter = _tessLevel - 1;
+  shaderPtr->setUniformValue("u_tessLevelOuter", m_tessLevelOuter);
 }
 
+int MaterialPBR::getTessLevelOuter() const noexcept { return m_tessLevelOuter; }
+
+void  MaterialPBR::setEyeDisp(const float _eyeDisp) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_eyeDisp = _eyeDisp;
+  shaderPtr->setUniformValue("u_eyeDisp", m_eyeDisp);
+}
+
+float MaterialPBR::getEyeDisp() const noexcept { return m_eyeDisp; }
+void  MaterialPBR::setEyeScale(const float _eyeScale) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_eyeScale = _eyeScale;
+  shaderPtr->setUniformValue("u_eyeScale", m_eyeScale);
+}
+
+float MaterialPBR::getEyeScale() const noexcept { return m_eyeScale; }
+void  MaterialPBR::setEyeRotation(const float _eyeRotation) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_eyeRotation = _eyeRotation;
+  shaderPtr->setUniformValue("u_eyeRotation", m_eyeRotation);
+}
+
+float MaterialPBR::getEyeRotation() const noexcept { return m_eyeRotation; }
+void  MaterialPBR::setEyeWarp(const float _eyeWarp) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_eyeWarp = _eyeWarp;
+  shaderPtr->setUniformValue("u_eyeWarp", m_eyeWarp);
+}
+
+float MaterialPBR::getEyeWarp() const noexcept { return m_eyeWarp; }
+void  MaterialPBR::setEyeExponent(const float _eyeExp) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_eyeExponent = _eyeExp;
+  shaderPtr->setUniformValue("u_eyeExponent", m_eyeExponent);
+}
+
+float MaterialPBR::getEyeExponent() const noexcept { return m_eyeExponent; }
+void  MaterialPBR::setEyeThickness(const float _eyeThickness) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_eyeThickness = _eyeThickness;
+  shaderPtr->setUniformValue("u_eyeThickness", m_eyeThickness);
+}
+
+float MaterialPBR::getEyeThickness() const noexcept { return m_eyeThickness; }
+void  MaterialPBR::setEyeGap(const float _eyeGap) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_eyeGap = _eyeGap;
+  shaderPtr->setUniformValue("u_eyeGap", m_eyeGap);
+}
+
+float MaterialPBR::getEyeGap() const noexcept { return m_eyeGap; }
+void  MaterialPBR::setEyeFuzz(const float _eyeFuzz) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_eyeFuzz = _eyeFuzz;
+  shaderPtr->setUniformValue("u_eyeFuzz", m_eyeFuzz);
+}
+
+float MaterialPBR::getEyeFuzz() const noexcept { return m_eyeFuzz; }
+
+void  MaterialPBR::setEyeMaskCap(const float _eyeMaskCap) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_eyeMaskCap = _eyeMaskCap;
+  shaderPtr->setUniformValue("u_eyeMaskCap", m_eyeMaskCap);
+}
+
+float MaterialPBR::getEyeMaskCap() const noexcept { return m_eyeMaskCap; }
+
+void  MaterialPBR::setTessMaskCap(const float _tessMaskCap) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_tessMaskCap = _tessMaskCap;
+  shaderPtr->setUniformValue("u_tessMaskCap", m_tessMaskCap);
+}
+
+float MaterialPBR::getTessMaskCap() const noexcept  { return m_tessMaskCap; }
+
+int MaterialPBR::getTessType() const noexcept
+{
+  return static_cast<int>(m_tessType);
+}
 
 void MaterialPBR::initTargets()
 {
   std::vector<TriMesh> targets;
-  targets.resize(200);
+  targets.resize(m_morphTargetCount);
   std::vector<glm::vec4> allVerts;
   std::vector<glm::vec4> allNorms;
   int i = 0;
@@ -446,6 +542,7 @@ void MaterialPBR::generate3DTexture(
     std::unique_ptr<QOpenGLTexture> &_texture,
     const int _dim,
     const std::string &_matPath,
+    const QOpenGLTexture::TextureFormat _format,
     const std::function<void (QOpenGLShaderProgram* io_prog)> &_prerender
     )
 {
@@ -457,9 +554,9 @@ void MaterialPBR::generate3DTexture(
   _texture->create();
   _texture->bind();
   _texture->setSize(_dim, _dim, _dim);
-  _texture->setFormat(tex::RGBA16F);
+  _texture->setFormat(_format);
   _texture->setMinMagFilters(tex::Linear, tex::Linear);
-  _texture->setWrapMode(tex::Repeat);
+  _texture->setWrapMode(tex::MirroredRepeat);
   _texture->allocateStorage();
 
   auto shaderName = m_shaderLib->loadShaderProg(_matPath.c_str());

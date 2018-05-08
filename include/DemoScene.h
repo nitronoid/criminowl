@@ -90,6 +90,71 @@ public slots:
   //-----------------------------------------------------------------------------------------------------
   void setPaused(const bool _paused);
   //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to set the tessellation algorithm for the eyes.
+  /// @param [in] _tessType is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void tessUpdate(const int _tessType);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to set the tessellation amount for the eyes.
+  /// @param [in] _tessLevel is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void tessLevelInnerUpdate(const int _tessLevel);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to set the tessellation amount for the eyes.
+  /// @param [in] _tessLevel is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void tessLevelOuterUpdate(const int _tessLevel);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the eye displacement amount of the shader.
+  /// @param [in] _eyeDisp is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeDispUpdate(const double _eyeDisp);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the eye scale of the shader.
+  /// @param [in] _eyeScale is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeScaleUpdate(const double _eyeScale);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the eye rotation amount of the shader.
+  /// @param [in] _eyeRotation is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeRotationUpdate(const double _eyeRotation);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the eye warp amount of the shader.
+  /// @param [in] _eyeWarp is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeWarpUpdate(const double _eyeWarp);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the eye exponent of the shader.
+  /// @param [in] _eyeExponent is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeExponentUpdate(const double _eyeExponent);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the eye thickness of the shader.
+  /// @param [in] _eyeThickness is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeThicknessUpdate(const double _eyeThickness);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the eye gap size of the shader.
+  /// @param [in] _eyeGap is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeGapUpdate(const double _eyeGap);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the eye fuzz amount of the shader.
+  /// @param [in] _eyeFuzz is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeFuzzUpdate(const double _eyeFuzz);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the eye mask cap size of the shader.
+  /// @param [in] _cap is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeMaskCapUpdate(const double _cap);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the tess mask cap size of the shader.
+  /// @param [in] _cap is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void tessMaskCapUpdate(const double _cap);
+  //-----------------------------------------------------------------------------------------------------
   /// @brief Used to link a Qt button to the scene, to allow switching between meshes in the scene, this
   /// calls loadMesh.
   //-----------------------------------------------------------------------------------------------------
@@ -134,12 +199,6 @@ private:
   /// @brief The materials used in this scene.
   //-----------------------------------------------------------------------------------------------------
   std::unique_ptr<MaterialPBR> m_material;
-  //-----------------------------------------------------------------------------------------------------
-  /// @brief Is the mesh rotating.
-  //-----------------------------------------------------------------------------------------------------
-  bool m_rotating = false;
-
-
 
 
 };

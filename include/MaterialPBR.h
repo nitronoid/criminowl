@@ -19,7 +19,9 @@ public:
       const float _roughness,
       const float _metallic,
       const float _baseSpec,
-      const float _normalStrength
+      const float _normalStrength,
+      const unsigned _morphTargetCount = 0,
+      const unsigned _morphTargetFPS = 0
       ) :
     Material(io_camera, io_shaderLib, io_matrices),
     m_context(io_context),
@@ -27,7 +29,9 @@ public:
     m_roughness(_roughness),
     m_metallic(_metallic),
     m_baseSpec(_baseSpec),
-    m_normalStrength(_normalStrength)
+    m_normalStrength(_normalStrength),
+    m_morphTargetCount(_morphTargetCount),
+    m_morphTargetFPS(_morphTargetFPS)
   {}
   MaterialPBR(const MaterialPBR&) = default;
   MaterialPBR& operator=(const MaterialPBR&) = default;
@@ -56,6 +60,45 @@ public:
   void setPaused(const bool _paused) noexcept;
   bool getPaused() const noexcept;
 
+  void setTessType(const int _tessType) noexcept;
+  int getTessType() const noexcept;
+
+  void setTessLevelInner(const int _tessLevel) noexcept;
+  int getTessLevelInner() const noexcept;
+
+  void setTessLevelOuter(const int _tessLevel) noexcept;
+  int getTessLevelOuter() const noexcept;
+
+  void  setEyeDisp(const float _eyeDisp) noexcept;
+  float getEyeDisp() const noexcept;
+
+  void  setEyeScale(const float _eyeScale) noexcept;
+  float getEyeScale() const noexcept;
+
+  void  setEyeRotation(const float _eyeRotation) noexcept;
+  float getEyeRotation() const noexcept;
+
+  void  setEyeWarp(const float _eyeWarp) noexcept;
+  float getEyeWarp() const noexcept;
+
+  void  setEyeExponent(const float _eyeExp) noexcept;
+  float getEyeExponent() const noexcept;
+
+  void  setEyeThickness(const float _eyeThickness) noexcept;
+  float getEyeThickness() const noexcept;
+
+  void  setEyeGap(const float _eyeGap) noexcept;
+  float getEyeGap() const noexcept;
+
+  void  setEyeFuzz(const float _eyeFuzz) noexcept;
+  float getEyeFuzz() const noexcept;
+
+  void  setEyeMaskCap(const float _eyeMaskCap) noexcept;
+  float getEyeMaskCap() const noexcept;
+
+  void  setTessMaskCap(const float _tessMaskCap) noexcept;
+  float getTessMaskCap() const noexcept;
+
 private:
   void initTargets();
   void initCaptureMatrices();
@@ -73,10 +116,12 @@ private:
       const std::function<void (QOpenGLShaderProgram* io_prog)> &_prerender = [](QOpenGLShaderProgram*){}
   );
 
-  void generate3DTexture(const TriMesh &_plane,
+  void generate3DTexture(
+      const TriMesh &_plane,
       const MeshVBO &_vbo,
       std::unique_ptr<QOpenGLTexture> &_texture, const int _dim,
       const std::string &_matPath,
+      const QOpenGLTexture::TextureFormat _format,
       const std::function<void (QOpenGLShaderProgram* io_prog)> &_prerender = [](QOpenGLShaderProgram*){}
   );
 
@@ -104,6 +149,23 @@ private:
   std::chrono::high_resolution_clock::time_point m_last;
   float m_time = 0.0f;
   bool m_paused = true;
+  GLuint m_tessType = 0;
+  int m_tessLevelInner  = 15;
+  int m_tessLevelOuter  = 15;
+  float m_tessMaskCap   = 1.f;
+
+  float m_eyeDisp      = -0.2f;
+  float m_eyeScale     = 1.55f;
+  float m_eyeRotation  =  7.0f;
+  float m_eyeWarp      =  1.0f;
+  float m_eyeExponent  =  3.0f;
+  float m_eyeThickness = 0.08f;
+  float m_eyeGap       = 0.19f;
+  float m_eyeFuzz      = 0.02f;
+  float m_eyeMaskCap   =  0.7f;
+
+  unsigned m_morphTargetCount = 0;
+  unsigned m_morphTargetFPS = 0;
 
 };
 

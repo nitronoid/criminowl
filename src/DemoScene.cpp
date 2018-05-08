@@ -72,7 +72,7 @@ void DemoScene::keyPress(QKeyEvent* io_event)
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::initMaterials()
 {
-  m_material.reset(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, context(), 1.0f, 0.2f, 0.0, 0.1f, 0.3f));
+  m_material.reset(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, context(), 1.0f, 0.2f, 0.0, 0.1f, 0.3f, 200u, 25u));
 
   auto name = m_shaderLib->loadShaderProg(m_material->shaderFileName());
   m_material->setShaderName(name);
@@ -109,6 +109,84 @@ void DemoScene::setPaused(const bool _paused)
   m_material->setPaused(_paused);
 }
 //-----------------------------------------------------------------------------------------------------
+void DemoScene::tessUpdate(const int _tessType)
+{
+  makeCurrent();
+  m_material->setTessType(_tessType);
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::tessLevelInnerUpdate(const int _tessLevel)
+{
+  makeCurrent();
+  m_material->setTessLevelInner(_tessLevel);
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::tessLevelOuterUpdate(const int _tessLevel)
+{
+  makeCurrent();
+  m_material->setTessLevelOuter(_tessLevel);
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeDispUpdate(const double _eyeDisp)
+{
+  makeCurrent();
+  m_material->setEyeDisp(static_cast<float>(_eyeDisp));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeScaleUpdate(const double _eyeScale)
+{
+  makeCurrent();
+  m_material->setEyeScale(static_cast<float>(_eyeScale));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeRotationUpdate(const double _eyeRotation)
+{
+  makeCurrent();
+  m_material->setEyeRotation(static_cast<float>(_eyeRotation));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeWarpUpdate(const double _eyeWarp)
+{
+  makeCurrent();
+  m_material->setEyeWarp(static_cast<float>(_eyeWarp));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeExponentUpdate(const double _eyeExponent)
+{
+  makeCurrent();
+  m_material->setEyeExponent(static_cast<float>(_eyeExponent));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeThicknessUpdate(const double _eyeThickness)
+{
+  makeCurrent();
+  m_material->setEyeThickness(static_cast<float>(_eyeThickness));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeGapUpdate(const double _eyeGap)
+{
+  makeCurrent();
+  m_material->setEyeGap(static_cast<float>(_eyeGap));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeFuzzUpdate(const double _eyeFuzz)
+{
+  makeCurrent();
+  m_material->setEyeFuzz(static_cast<float>(_eyeFuzz));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeMaskCapUpdate(const double _cap)
+{
+  makeCurrent();
+  m_material->setEyeMaskCap(static_cast<float>(_cap));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::tessMaskCapUpdate(const double _cap)
+{
+  makeCurrent();
+  m_material->setTessMaskCap(static_cast<float>(_cap));
+}
+//-----------------------------------------------------------------------------------------------------
 void DemoScene::generateNewGeometry()
 {
   makeCurrent();
@@ -127,12 +205,6 @@ void DemoScene::generateNewGeometry()
 void DemoScene::renderScene()
 {
   Scene::renderScene();
-
-  // Scope the using declaration
-  {
-    using namespace SceneMatrices;
-    m_matrices[MODEL_VIEW] = glm::rotate(m_matrices[MODEL_VIEW], glm::radians(-1.0f * m_rotating), glm::vec3(0.0f, 1.0f, 0.0f));
-  }
 
   m_material->update();
 

@@ -107,12 +107,12 @@ void main()
 {
   vec3 coord = go_out.base_position * 0.2 + vec3(0.5, 0.55, 0.5);
 
-  vec4 normalTgt;
-  int normalResidency = sparseTextureEXT(u_normalMap, coord, normalTgt);
-  vec4 albedoDisp;
-  int albedoResidency = sparseTextureEXT(u_albedoMap, coord, albedoDisp);
-  if (!sparseTexelsResidentEXT(albedoResidency) || !sparseTexelsResidentEXT(normalResidency))
-    discard;
+  vec4 normalTgt = texture(u_normalMap, coord);
+//  int normalResidency = sparseTextureEXT(u_normalMap, coord, normalTgt);
+  vec4 albedoDisp = texture(u_albedoMap, coord);
+//  int albedoResidency = sparseTextureEXT(u_albedoMap, coord, albedoDisp);
+//  if (!sparseTexelsResidentEXT(albedoResidency) || !sparseTexelsResidentEXT(normalResidency))
+//    discard;
 
   // Extract the normal from the normal map (rescale to [-1,1]
   vec3 tgt = normalTgt.rgb * 2.0 - 1.0;
