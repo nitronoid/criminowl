@@ -65,10 +65,30 @@ public:
 
 public slots:
   //-----------------------------------------------------------------------------------------------------
-  /// @brief Used to link a Qt button to the scene, to allow rotation of the model to be toggled.
-  /// @param [in] _rotating tells the scene whether it should rotate the model or not.
+  /// @brief Used to link a Qt button to the scene, to change the metallic value of the shader.
+  /// @param [in] _metallic is the new value for the shader.
   //-----------------------------------------------------------------------------------------------------
-  void rotating(const bool _rotating);
+  void metallicUpdate(const double _metallic);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the roughness value of the shader.
+  /// @param [in] _roughness is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void roughnessUpdate(const double _roughness);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the base specular value of the shader.
+  /// @param [in] _baseSpec is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void baseSpecUpdate(const double _baseSpec);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the normal strength value of the shader.
+  /// @param [in] _normalStrength is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void normalStrengthUpdate(const double _normalStrength);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to pause and unpause the morph targets.
+  /// @param [in] _paused is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void setPaused(const bool _paused);
   //-----------------------------------------------------------------------------------------------------
   /// @brief Used to link a Qt button to the scene, to allow switching between meshes in the scene, this
   /// calls loadMesh.
@@ -94,7 +114,7 @@ private:
   //-----------------------------------------------------------------------------------------------------
   /// @brief Holds our test meshes.
   //-----------------------------------------------------------------------------------------------------
-  Mesh m_owlMesh;
+  TriMesh m_owlMesh;
   //-----------------------------------------------------------------------------------------------------
   /// @brief Wraps up our OpenGL buffers and VAO.
   //-----------------------------------------------------------------------------------------------------
@@ -113,7 +133,7 @@ private:
   //-----------------------------------------------------------------------------------------------------
   /// @brief The materials used in this scene.
   //-----------------------------------------------------------------------------------------------------
-  std::unique_ptr<Material> m_material;
+  std::unique_ptr<MaterialPBR> m_material;
   //-----------------------------------------------------------------------------------------------------
   /// @brief Is the mesh rotating.
   //-----------------------------------------------------------------------------------------------------

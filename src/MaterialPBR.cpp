@@ -1,7 +1,7 @@
 #include "MaterialPBR.h"
 #include "Scene.h"
 #include "ShaderLib.h"
-#include <QOpenGLFunctions_4_1_Core>
+#include <QOpenGLFunctions_4_3_Core>
 #include <QOpenGLFramebufferObject>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
@@ -15,9 +15,9 @@ void MaterialPBR::init()
   vao.create();
   vao.bind();
 
-  Mesh cube;
+  TriMesh cube;
   cube.load("models/unitCube.obj");
-  Mesh plane;
+  TriMesh plane;
   plane.load("models/unitPlane.obj");
 
   MeshVBO vbo;
@@ -63,14 +63,16 @@ void MaterialPBR::init()
   }
   initBrdfLUTMap(plane, vbo);
   // Generate the albedo map
-  generate3DTexture(plane, vbo, m_albedoMap, "shaderPrograms/owl_noise.json");
+  generate3DTexture(plane, vbo, m_albedoMap, 256, "shaderPrograms/owl_noise.json");
   // Generate the normal map
-  generate3DTexture(plane, vbo, m_normalMap, "shaderPrograms/owl_normal.json",
+  generate3DTexture(plane, vbo, m_normalMap, 256, "shaderPrograms/owl_normal.json",
                     [&bumpMap = m_albedoMap](auto shader)
   {
     shader->setUniformValue("u_bumpMap", 0);
     bumpMap->bind(0);
   });
+
+  initTargets();
 
   shaderPtr->bind();
   shaderPtr->setPatchVertexCount(3);
@@ -83,21 +85,32 @@ void MaterialPBR::init()
   shaderPtr->setUniformValue("u_ao", m_ao);
   shaderPtr->setUniformValue("u_roughness", m_roughness);
   shaderPtr->setUniformValue("u_metallic", m_metallic);
+  shaderPtr->setUniformValue("u_baseSpec", m_baseSpec);
+  shaderPtr->setUniformValue("u_normalStrength", m_normalStrength);
 
+
+  m_last = std::chrono::high_resolution_clock::now();
   // Update our matrices
   update();
 }
 
 void MaterialPBR::update()
 {
-
   m_irradianceMap->bind(0);
   m_prefilteredMap->bind(1);
   m_brdfMap->bind(2);
   m_albedoMap->bind(3);
   m_normalMap->bind(4);
+  m_context->versionFunctions<QOpenGLFunctions_4_3_Core>()->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_morphTargetBuffer.bufferId());
+
 
   auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  using namespace std::chrono;
+  auto now = high_resolution_clock::now();
+  m_time += (duration_cast<milliseconds>(now - m_last).count() * !m_paused);
+  m_last = now;
+  const auto blend = std::fmod(m_time * 0.001f * 25.f, 8.0f * 25.f);
+  shaderPtr->setUniformValue("u_blend", blend);
   auto eye = m_cam->getCameraEye();
   shaderPtr->setUniformValue("u_camPos", QVector3D{eye.x, eye.y, eye.z});
 
@@ -119,6 +132,127 @@ void MaterialPBR::update()
 const char* MaterialPBR::shaderFileName() const
 {
   return "shaderPrograms/owl_pbr.json";
+}
+
+void MaterialPBR::setMetallic(const float _metallic) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_metallic = _metallic;
+  shaderPtr->setUniformValue("u_metallic", m_metallic);
+}
+
+float MaterialPBR::getMetallic() const noexcept
+{
+  return m_metallic;
+}
+
+void MaterialPBR::setRoughness(const float _roughness) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_roughness = _roughness;
+  shaderPtr->setUniformValue("u_roughness", m_roughness);
+}
+
+float MaterialPBR::getRoughness() const noexcept
+{
+  return m_roughness;
+}
+
+void MaterialPBR::setBaseSpec(const float _baseSpec) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_baseSpec = _baseSpec;
+  shaderPtr->setUniformValue("u_baseSpec", m_baseSpec);
+}
+
+float MaterialPBR::getBaseSpec() const noexcept
+{
+  return m_baseSpec;
+}
+
+void MaterialPBR::setNormalStrength(const float _normalStrength) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_normalStrength = _normalStrength;
+  shaderPtr->setUniformValue("u_normalStrength", m_normalStrength);
+}
+
+float MaterialPBR::getNormalStrength() const noexcept
+{
+  return m_normalStrength;
+}
+
+void MaterialPBR::setPaused(const bool _paused) noexcept
+{
+  m_paused = _paused;
+}
+
+bool MaterialPBR::getPaused() const noexcept
+{
+  return m_paused;
+}
+
+
+void MaterialPBR::initTargets()
+{
+  std::vector<TriMesh> targets;
+  targets.resize(200);
+  std::vector<glm::vec4> allVerts;
+  std::vector<glm::vec4> allNorms;
+  int i = 0;
+  for (auto& target : targets)
+  {
+    auto frame = std::to_string(i);
+    frame = std::string(4 - frame.length(), '0') + frame;
+    target.load("models/morph_targets/owl_pose." + frame + ".obj");
+    auto& verts = target.getVertices();
+    auto& norms = target.getNormals();
+
+    allVerts.reserve(allVerts.size() + verts.size());
+    for (const auto &v : verts)
+    {
+      // Pad for the ssbo
+      allVerts.push_back(glm::vec4(v, 0.f));
+    }
+
+    allNorms.reserve(allNorms.size() + norms.size());
+    for (const auto &n : norms)
+    {
+      // Pad for the ssbo
+      allNorms.push_back(glm::vec4(n, 0.f));
+    }
+
+    ++i;
+  }
+  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_3_Core>();
+  auto normOffset = allVerts.size();
+  auto allData = std::move(allVerts);
+  allData.reserve(allData.size() + allNorms.size());
+  allData.insert(allData.end(),allNorms.begin(),allNorms.end());
+
+  auto data_size = (allData.size()) * sizeof (glm::vec4);
+
+  // Setup the SSBO
+  m_morphTargetBuffer.create();
+  m_morphTargetBuffer.bind();
+  m_morphTargetBuffer.allocate(allData.data(), data_size);
+  m_morphTargetBuffer.bind();
+  // Obtain a pointer and write out morph target data
+  GLvoid* p = m_morphTargetBuffer.map(QOpenGLBuffer::WriteOnly);
+  std::memcpy(p, allData.data(), data_size);
+  m_morphTargetBuffer.unmap();
+
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  auto progID = shaderPtr->programId();
+  GLuint block_index = funcs->glGetProgramResourceIndex(progID, GL_SHADER_STORAGE_BLOCK, "morph_targets");
+  GLuint bindingPoint = 0;
+  funcs->glShaderStorageBlockBinding(progID, block_index, bindingPoint);
+  funcs->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint, m_morphTargetBuffer.bufferId());
+
+
+  shaderPtr->bind();
+  shaderPtr->setUniformValue("u_morph_target_size", static_cast<int>(targets[0].getNVerts()));
+  shaderPtr->setUniformValue("u_morph_target_normal_offset", static_cast<int>(normOffset));
 }
 
 void MaterialPBR::initCaptureMatrices()
@@ -163,7 +297,7 @@ void MaterialPBR::initSphereMap()
 }
 
 void MaterialPBR::generateCubeMap(
-    const Mesh &_cube,
+    const TriMesh &_cube,
     const MeshVBO &_vbo,
     std::unique_ptr<QOpenGLTexture> &_texture,
     const int _dim,
@@ -175,7 +309,7 @@ void MaterialPBR::generateCubeMap(
   auto defaultFBO = m_context->defaultFramebufferObject();
   auto shaderName = m_shaderLib->loadShaderProg(_matPath.c_str());
   auto shader = m_shaderLib->getShader(shaderName);
-  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
+  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_3_Core>();
 
   auto fbo = std::make_unique<QOpenGLFramebufferObject>(_dim, _dim, QOpenGLFramebufferObject::Depth);
 
@@ -213,11 +347,11 @@ void MaterialPBR::generateCubeMap(
   fbo->release();
 }
 
-void MaterialPBR::initPrefilteredMap(const Mesh &_cube, const MeshVBO &_vbo)
+void MaterialPBR::initPrefilteredMap(const TriMesh &_cube, const MeshVBO &_vbo)
 {
   using tex = QOpenGLTexture;
   auto defaultFBO = m_context->defaultFramebufferObject();
-  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
+  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_3_Core>();
 
   m_prefilteredMap.reset(new QOpenGLTexture(QOpenGLTexture::TargetCubeMap));
   m_prefilteredMap->create();
@@ -269,11 +403,11 @@ void MaterialPBR::initPrefilteredMap(const Mesh &_cube, const MeshVBO &_vbo)
   }
 }
 
-void MaterialPBR::initBrdfLUTMap(const Mesh &_plane, const MeshVBO &_vbo)
+void MaterialPBR::initBrdfLUTMap(const TriMesh &_plane, const MeshVBO &_vbo)
 {
   using tex = QOpenGLTexture;
   auto defaultFBO = m_context->defaultFramebufferObject();
-  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
+  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_3_Core>();
 
   m_brdfMap.reset(new QOpenGLTexture(QOpenGLTexture::Target2D));
   m_brdfMap->create();
@@ -307,22 +441,22 @@ void MaterialPBR::initBrdfLUTMap(const Mesh &_plane, const MeshVBO &_vbo)
 }
 
 void MaterialPBR::generate3DTexture(
-    const Mesh &_plane,
+    const TriMesh &_plane,
     const MeshVBO &_vbo,
     std::unique_ptr<QOpenGLTexture> &_texture,
+    const int _dim,
     const std::string &_matPath,
     const std::function<void (QOpenGLShaderProgram* io_prog)> &_prerender
     )
 {
-  static constexpr auto RES = 512;
   using tex = QOpenGLTexture;
   auto defaultFBO = m_context->defaultFramebufferObject();
-  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_1_Core>();
+  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_3_Core>();
 
   _texture.reset(new QOpenGLTexture(QOpenGLTexture::Target3D));
   _texture->create();
   _texture->bind();
-  _texture->setSize(RES, RES, RES);
+  _texture->setSize(_dim, _dim, _dim);
   _texture->setFormat(tex::RGBA16F);
   _texture->setMinMagFilters(tex::Linear, tex::Linear);
   _texture->setWrapMode(tex::Repeat);
@@ -331,8 +465,8 @@ void MaterialPBR::generate3DTexture(
   auto shaderName = m_shaderLib->loadShaderProg(_matPath.c_str());
   auto shader = m_shaderLib->getShader(shaderName);
 
-  auto fbo = std::make_unique<QOpenGLFramebufferObject>(RES, RES, QOpenGLFramebufferObject::Depth, GL_TEXTURE_3D);
-  funcs->glViewport(0, 0, RES, RES);
+  auto fbo = std::make_unique<QOpenGLFramebufferObject>(_dim, _dim, QOpenGLFramebufferObject::Depth, GL_TEXTURE_3D);
+  funcs->glViewport(0, 0, _dim, _dim);
   shader->bind();
   {
     using namespace MeshAttributes;
@@ -344,8 +478,8 @@ void MaterialPBR::generate3DTexture(
 
   _prerender(shader);
 
-  static constexpr auto denom = 1.f / static_cast<float>(RES);
-  for (int i = 0; i < RES; ++i)
+  const auto denom = 1.f / static_cast<float>(_dim);
+  for (int i = 0; i < _dim; ++i)
   {
     shader->setUniformValue("u_zDepth", i * denom);
     funcs->glFramebufferTexture3D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_3D, _texture->textureId(), 0, i);

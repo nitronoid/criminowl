@@ -12,7 +12,7 @@ const ivec3 k_offset = ivec3(-1, 0, 1);
 void main() 
 {
     vec3 coord = vec3(vs_texCoords, u_zDepth);
-    float s11 = texture(u_bumpMap, coord).w;
+//    float s11 = texture(u_bumpMap, coord).w;
 
     float s01 = textureOffset(u_bumpMap, coord, k_offset.xyy).w;
     float s21 = textureOffset(u_bumpMap, coord, k_offset.zyy).w;

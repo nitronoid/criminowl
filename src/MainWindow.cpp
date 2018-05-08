@@ -6,8 +6,11 @@ void MainWindow::init(const std::shared_ptr<Scene> &io_scene)
   m_scene = io_scene;
   m_ui.setupUi(this);
   m_ui.s_mainWindowGridLayout->addWidget(m_scene.get(),0,0,3,5);
-  connect(m_ui.m_rotating, SIGNAL(clicked(bool)),m_scene.get(), SLOT(rotating(bool)));
-  connect(m_ui.generate, SIGNAL( clicked(bool)), m_scene.get(), SLOT(generateNewGeometry()));
+  connect(m_ui.metallicSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(metallicUpdate(double)));
+  connect(m_ui.roughnessSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(roughnessUpdate(double)));
+  connect(m_ui.baseSpecSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(baseSpecUpdate(double)));
+  connect(m_ui.normalStrengthSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(normalStrengthUpdate(double)));
+  connect(m_ui.pausedCheckBox, SIGNAL(clicked(bool)), m_scene.get(), SLOT(setPaused(bool)));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

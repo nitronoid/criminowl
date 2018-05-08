@@ -36,7 +36,6 @@ HEADERS += \
     include/CameraStates.h \
     include/Material.h \
     include/MaterialPBR.h \
-    include/Mesh.h \
     include/Scene.h \
     include/DemoScene.h \
     include/MaterialPhong.h \
@@ -45,7 +44,9 @@ HEADERS += \
     include/MaterialWireframe.h \
     include/MaterialFractal.h \
     include/MaterialEnvMap.h \
-    include/MaterialBump.h
+    include/MaterialBump.h \
+    include/TriMesh.h \
+    include/Edge.h
 
 SOURCES += \
     src/main.cpp \
@@ -53,7 +54,6 @@ SOURCES += \
     src/Camera.cpp \
     src/TrackballCamera.cpp \
     src/CameraStates.cpp \
-    src/Mesh.cpp \
     src/Material.cpp \
     src/MaterialPBR.cpp \
     src/Scene.cpp \
@@ -64,7 +64,8 @@ SOURCES += \
     src/MaterialWireframe.cpp \
     src/MaterialFractal.cpp \
     src/MaterialEnvMap.cpp \
-    src/MaterialBump.cpp
+    src/MaterialBump.cpp \
+    src/TriMesh.cpp
 
 OTHER_FILES += \
     $$files(shaders/*, true) \

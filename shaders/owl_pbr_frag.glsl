@@ -1,12 +1,13 @@
-#version 400
+#version 450 core
+#extension GL_EXT_sparse_texture2 : enable
 
 // This code is based on code from here https://learnopengl.com/#!PBR/Lighting
 layout (location = 0) out vec4 FragColour;
 
 in struct
 {
-  vec3 localPos;
-  vec3 worldPos;
+  vec3 world_position;
+  vec3 base_position;
   vec3 normal;
   vec2 uv;
   float eyeVal;
@@ -15,9 +16,11 @@ in struct
 // material parameters
 uniform sampler3D u_albedoMap;
 uniform sampler3D u_normalMap;
-uniform float u_metallic;
-uniform float u_roughness;
-uniform float u_ao;
+uniform float u_metallic = 0.0;
+uniform float u_roughness = 0.0;
+uniform float u_ao = 0.0;
+uniform float u_baseSpec = 0.0;
+uniform float u_normalStrength = 0.0;
 // camera parameters
 uniform vec3 u_camPos;
 //env map params
@@ -102,29 +105,34 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 
 void main()
 {
-  float normalStrength = 0.3;
-  vec3 coord = go_out.localPos * 0.2 + vec3(0.5, 0.55, 0.5);
+  vec3 coord = go_out.base_position * 0.2 + vec3(0.5, 0.55, 0.5);
+
+  vec4 normalTgt;
+  int normalResidency = sparseTextureEXT(u_normalMap, coord, normalTgt);
+  vec4 albedoDisp;
+  int albedoResidency = sparseTextureEXT(u_albedoMap, coord, albedoDisp);
+  if (!sparseTexelsResidentEXT(albedoResidency) || !sparseTexelsResidentEXT(normalResidency))
+    discard;
+
   // Extract the normal from the normal map (rescale to [-1,1]
-  vec3 tgt = texture(u_normalMap, coord).rgb * 2.0 - 1.0;
+  vec3 tgt = normalTgt.rgb * 2.0 - 1.0;
 
   // The source is just up in the Z-direction
   vec3 src = vec3(0.0, 0.0, 1.0);
 
   // Perturb the normal according to the target
-  vec3 np = normalize(mix(go_out.normal, rotateVector(src, tgt, go_out.normal), normalStrength));
+  vec3 np = normalize(mix(go_out.normal, rotateVector(src, tgt, go_out.normal), u_normalStrength));
 
-  vec4 albedoDisp = texture(u_albedoMap, coord);
   vec3 eyeAlbedo = mix(albedoDisp.xyz, vec3(0.4, 0.34, 0.38) * turb(u_offsetPos, 10), go_out.eyeVal);
 
-  vec3 N = np;//mix(np, Normal, EyeVal);
-  vec3 V = normalize(u_camPos - go_out.worldPos);
+  vec3 N = np;
+  vec3 V = normalize(u_camPos - go_out.world_position);
   vec3 R = reflect(-V, N);
 
 
   // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
   // of 0.04 and if it's a metal, use their albedo color as F0 (metallic workflow)
-  float baseSpec = 0.1;// + cnoise(u_offsetPos * 5.0) * 0.2 * (1 - go_out.eyeVal * 2.0);
-  vec3 F0 = vec3(baseSpec);
+  vec3 F0 = vec3(u_baseSpec);
   F0 = mix(F0, eyeAlbedo, u_metallic);
 
   // reflectance equation
@@ -132,7 +140,7 @@ void main()
   for(int i = 0; i < 4; ++i)
   {
     vec3 trans = vec3(0.0, 0.0, -2.0);
-    vec3 ray = k_lightPositions[i] - go_out.worldPos + trans;
+    vec3 ray = k_lightPositions[i] - go_out.world_position + trans;
     // calculate per-light radiance
     vec3 L = normalize(ray);
     vec3 H = normalize(V + L);

@@ -72,16 +72,41 @@ void DemoScene::keyPress(QKeyEvent* io_event)
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::initMaterials()
 {
-  m_material.reset(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, context(), {0.5f, 0.0f, 0.0f}, 1.0f, 0.2f, 0.0));
+  m_material.reset(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, context(), 1.0f, 0.2f, 0.0, 0.1f, 0.3f));
 
   auto name = m_shaderLib->loadShaderProg(m_material->shaderFileName());
   m_material->setShaderName(name);
   m_material->apply();
 }
 //-----------------------------------------------------------------------------------------------------
-void DemoScene::rotating( const bool _rotating )
+void DemoScene::metallicUpdate(const double _metallic)
 {
-  m_rotating = _rotating;
+  makeCurrent();
+  m_material->setMetallic(static_cast<float>(_metallic));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::roughnessUpdate(const double _roughness)
+{
+  makeCurrent();
+  m_material->setRoughness(static_cast<float>(_roughness));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::baseSpecUpdate(const double _baseSpec)
+{
+  makeCurrent();
+  m_material->setBaseSpec(static_cast<float>(_baseSpec));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::normalStrengthUpdate(const double _normalStrength)
+{
+  makeCurrent();
+  m_material->setNormalStrength(static_cast<float>(_normalStrength));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::setPaused(const bool _paused)
+{
+  makeCurrent();
+  m_material->setPaused(_paused);
 }
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::generateNewGeometry()

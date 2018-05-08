@@ -1,4 +1,4 @@
-#version 400
+#version 430
 
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
@@ -7,6 +7,7 @@ layout(triangle_strip, max_vertices = 3) out;
 in struct
 {
   vec3 position;
+  vec3 base_position;
   vec3 normal;
   vec2 uv;
 } te_out[3];
@@ -14,8 +15,8 @@ in struct
 //out
 out struct
 {
-  vec3 localPos;
-  vec3 worldPos;
+  vec3 world_position;
+  vec3 base_position;
   vec3 normal;
   vec2 uv;
   float eyeVal;
@@ -37,6 +38,8 @@ uniform float u_eyeFuzz      = 0.02;
 
 #include "shaders/include/owl_eye_funcs.h"
 #include "shaders/include/owl_bump_funcs.h"
+#include "shaders/include/perlin_noise.h"
+#include "shaders/include/owl_noise_funcs.h"
 
 float height(vec3 _pos, float _z)
 {
@@ -64,50 +67,48 @@ vec3 firstDifferenceEstimator(vec3 p, vec3 n, float _z, float delta)
   float halfdelta = 0.5 * delta;
   float invdelta = 1.0 / delta;
 
-  float u = -halfdelta;
-  float v = -halfdelta;
-  //float c00 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
-  float c00 = height(p + vec3(u,v,0), _z);
+  const vec2 size = vec2(delta, 0.0);
+  const vec2 off = vec2(-1, 1) * halfdelta;
 
-  u = -halfdelta; v = halfdelta;
-  //float c01 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
-  float c01 = height(p + vec3(u,v,0), _z);
+  float s00 = height(p + vec3(off.xx, a * off.x + b * off.x + c), _z);
+  float s01 = height(p + vec3(off.xy, a * off.x + b * off.y + c), _z);
+  float s10 = height(p + vec3(off.yx, a * off.y + b * off.x + c), _z);
+  float s11 = height(p + vec3(off.yy, a * off.y + b * off.y + c), _z);
 
-  u = halfdelta; v = -halfdelta;
-  //float c10 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
-  float c10 = height(p + vec3(u,v,0), _z);
 
-  u = halfdelta; v = halfdelta;
-  //float c11 = texture(tex, p + vec3(u,v,a*u+b*v+c)).r;
-  float c11 = height(p + vec3(u,v,0), _z);
-
-  return vec3( 0.5*((c10-c00)+(c11-c01))*invdelta,
-               0.5*((c01-c00)+(c11-c10))*invdelta,
-               1.0);
+  return vec3( 0.5*((s10-s00)+(s11-s01))*invdelta,
+               0.5*((s01-s00)+(s11-s10))*invdelta,
+               1.0);;
 }
 
 void main()
 {
+  vec3 norms[3];
+  vec3 newPositions[3];
+  float hVals[3];
   for(int i = 0; i < 3; i++)
   {
-    go_out.normal = normalize(te_out[i].normal);
+    norms[i] = normalize(te_out[i].normal);
+    hVals[i] = height(te_out[i].base_position, te_out[i].normal.z);
+    newPositions[i] = te_out[i].position + normalize(te_out[i].normal) * hVals[i] * u_eyeDisp;
+  }
+
+  vec3 faceNormal = cross(newPositions[1] - newPositions[0], newPositions[2] - newPositions[0]);
+
+  for(int i = 0; i < 3; i++)
+  {
+    go_out.base_position = te_out[i].base_position + norms[i] * hVals[i] * u_eyeDisp;
+    go_out.eyeVal = hVals[i];
     go_out.uv = te_out[i].uv;
 
-    vec3 offset = vec3(1.0, 1.0, 0.0);
-    float h = height(te_out[i].position, te_out[i].normal.z);
+//    vec3 fd = normalize(vec3(u_eyeDisp, u_eyeDisp, 1.0) * firstDifferenceEstimator(go_out.base_position, go_out.normal, te_out[i].normal.z, 0.1));
 
-    go_out.eyeVal = h;
-
-    vec4 newPos = vec4(te_out[i].position + go_out.normal * h * u_eyeDisp, 1.0);
-    go_out.localPos = newPos.xyz;
-    // Now calculate the specular component
-    vec3 fd = normalize(vec3(u_eyeDisp, u_eyeDisp, 1.0) * firstDifferenceEstimator(go_out.localPos, go_out.normal, te_out[i].normal.z, 0.1));
-
-    // Calls our normal perturbation function
-    vec3 n1 = perturbNormalVector(go_out.normal, fd);
-
-    go_out.normal = mix(go_out.normal, n1, h);
-    go_out.worldPos = vec3(M * newPos);
+//    // Calls our normal perturbation function
+//    vec3 n1 = perturbNormalVector(go_out.normal, fd);
+    vec3 randNorm = normalize(faceNormal + noiseFunction(faceNormal * i) * 0.01);
+    go_out.normal = mix(norms[i], randNorm, hVals[i]);
+    vec4 newPos = vec4(newPositions[i], 1.0);
+    go_out.world_position = vec3(M * newPos);
 
     gl_Position = MVP * newPos;
 
