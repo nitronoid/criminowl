@@ -63,9 +63,9 @@ void MaterialPBR::init()
   }
   initBrdfLUTMap(plane, vbo);
   // Generate the albedo map
-  generate3DTexture(plane, vbo, m_albedoMap, 256, "shaderPrograms/owl_noise.json", QOpenGLTexture::RGBA16F);
+  generate3DTexture(plane, vbo, m_albedoMap, 512, "shaderPrograms/owl_noise.json", QOpenGLTexture::RGBA16F);
   // Generate the normal map
-  generate3DTexture(plane, vbo, m_normalMap, 256, "shaderPrograms/owl_normal.json", QOpenGLTexture::RGB16F,
+  generate3DTexture(plane, vbo, m_normalMap, 512, "shaderPrograms/owl_normal.json", QOpenGLTexture::RGB16F,
                     [&bumpMap = m_albedoMap](auto shader)
   {
     shader->setUniformValue("u_bumpMap", 0);
@@ -146,6 +146,15 @@ void MaterialPBR::setMetallic(const float _metallic) noexcept
 
 float MaterialPBR::getMetallic() const noexcept { return m_metallic; }
 
+void MaterialPBR::setAO(const float _ao) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_ao = _ao;
+  shaderPtr->setUniformValue("u_ao", m_ao);
+}
+
+float MaterialPBR::getAO() const noexcept { return m_ao; }
+
 void MaterialPBR::setRoughness(const float _roughness) noexcept
 {
   auto shaderPtr = m_shaderLib->getShader(m_shaderName);
@@ -217,6 +226,16 @@ void  MaterialPBR::setEyeScale(const float _eyeScale) noexcept
 }
 
 float MaterialPBR::getEyeScale() const noexcept { return m_eyeScale; }
+
+void MaterialPBR::setEyeTranslate(const glm::vec3 _eyeTranslate) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_eyeTranslate = _eyeTranslate;
+  shaderPtr->setUniformValue("u_eyeTranslate", QVector3D{m_eyeTranslate.x, m_eyeTranslate.y, m_eyeTranslate.z});
+}
+
+glm::vec3 MaterialPBR::getEyeTranslate() const noexcept { return m_eyeTranslate; }
+
 void  MaterialPBR::setEyeRotation(const float _eyeRotation) noexcept
 {
   auto shaderPtr = m_shaderLib->getShader(m_shaderName);
@@ -288,6 +307,15 @@ int MaterialPBR::getTessType() const noexcept
 {
   return static_cast<int>(m_tessType);
 }
+
+void  MaterialPBR::setPhongStrength(const float _strength) noexcept
+{
+  auto shaderPtr = m_shaderLib->getShader(m_shaderName);
+  m_phongStrength = _strength;
+  shaderPtr->setUniformValue("u_phong_strength", m_phongStrength);
+}
+
+float MaterialPBR::getPhongStrength() const noexcept { return m_phongStrength; }
 
 void MaterialPBR::initTargets()
 {

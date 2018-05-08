@@ -70,6 +70,26 @@ public slots:
   //-----------------------------------------------------------------------------------------------------
   void metallicUpdate(const double _metallic);
   //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the ao value of the shader.
+  /// @param [in] _ao is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void aoUpdate(const double _ao);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the x value of the eye translate.
+  /// @param [in] _x is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeTranslateXUpdate(const double _x);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the y value of the eye translate.
+  /// @param [in] _y is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeTranslateYUpdate(const double _y);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to change the z value of the eye translate.
+  /// @param [in] _z is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void eyeTranslateZUpdate(const double _z);
+  //-----------------------------------------------------------------------------------------------------
   /// @brief Used to link a Qt button to the scene, to change the roughness value of the shader.
   /// @param [in] _roughness is the new value for the shader.
   //-----------------------------------------------------------------------------------------------------
@@ -94,6 +114,11 @@ public slots:
   /// @param [in] _tessType is the new value for the shader.
   //-----------------------------------------------------------------------------------------------------
   void tessUpdate(const int _tessType);
+  //-----------------------------------------------------------------------------------------------------
+  /// @brief Used to link a Qt button to the scene, to set the phong strength for the eye tessellation.
+  /// @param [in] _strengthPercent is the new value for the shader.
+  //-----------------------------------------------------------------------------------------------------
+  void phongStrengthUpdate(const int _strengthPercent);
   //-----------------------------------------------------------------------------------------------------
   /// @brief Used to link a Qt button to the scene, to set the tessellation amount for the eyes.
   /// @param [in] _tessLevel is the new value for the shader.

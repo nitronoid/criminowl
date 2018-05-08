@@ -25,7 +25,7 @@ out struct
 } te_out;
 
 uniform mat4 MVP;
-uniform float u_smooth_tess = 1.0;
+uniform float u_phong_strength = 0.55;
 
 #define coord gl_TessCoord
 
@@ -49,7 +49,7 @@ subroutine(tessFuncType) vec3 phongTess(vec3 baryPos)
     int j = (i + 1) % 3;
     phongPos += (coord2[i] * tc_out[i].position + coord[i] * coord[j] * terms[i]);
   }
-  return mix(baryPos, phongPos, u_smooth_tess);
+  return mix(baryPos, phongPos, u_phong_strength);
 }
 
 subroutine(tessFuncType) vec3 flatTess(vec3 baryPos)

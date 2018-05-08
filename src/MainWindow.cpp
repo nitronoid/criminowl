@@ -10,6 +10,7 @@ void MainWindow::init(const std::shared_ptr<Scene> &io_scene)
   connect(m_ui.roughnessSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(roughnessUpdate(double)));
   connect(m_ui.baseSpecSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(baseSpecUpdate(double)));
   connect(m_ui.normalStrengthSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(normalStrengthUpdate(double)));
+  connect(m_ui.aoSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(aoUpdate(double)));
   connect(m_ui.pausedCheckBox, SIGNAL(clicked(bool)), m_scene.get(), SLOT(setPaused(bool)));
 
   m_ui.tessButtonGroup->setId(m_ui.flatTessRadioButton, 0);
@@ -18,6 +19,7 @@ void MainWindow::init(const std::shared_ptr<Scene> &io_scene)
   connect(m_ui.tessLevelInnerSpinBox, SIGNAL(valueChanged(int)), m_scene.get(), SLOT(tessLevelInnerUpdate(int)));
   connect(m_ui.tessLevelOuterSpinBox, SIGNAL(valueChanged(int)), m_scene.get(), SLOT(tessLevelOuterUpdate(int)));
   connect(m_ui.tessMaskCapSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(tessMaskCapUpdate(double)));
+  connect(m_ui.phongTessSlider, SIGNAL(valueChanged(int)), m_scene.get(), SLOT(phongStrengthUpdate(int)));
 
 
   connect(m_ui.eyeDisplacementSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(eyeDispUpdate(double)));
@@ -30,6 +32,9 @@ void MainWindow::init(const std::shared_ptr<Scene> &io_scene)
   connect(m_ui.eyeFuzzSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(eyeFuzzUpdate(double)));
   connect(m_ui.eyeFuzzSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(eyeFuzzUpdate(double)));
   connect(m_ui.eyeMaskCapSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(eyeMaskCapUpdate(double)));
+  connect(m_ui.eyeTranslateXSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(eyeTranslateXUpdate(double)));
+  connect(m_ui.eyeTranslateYSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(eyeTranslateYUpdate(double)));
+  connect(m_ui.eyeTranslateZSpinBox, SIGNAL(valueChanged(double)), m_scene.get(), SLOT(eyeTranslateZUpdate(double)));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

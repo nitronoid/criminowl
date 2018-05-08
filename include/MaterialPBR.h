@@ -48,6 +48,9 @@ public:
   void setMetallic(const float _metallic) noexcept;
   float getMetallic() const noexcept;
 
+  void setAO(const float _ao) noexcept;
+  float getAO() const noexcept;
+
   void setRoughness(const float _roughness) noexcept;
   float getRoughness() const noexcept;
 
@@ -75,6 +78,9 @@ public:
   void  setEyeScale(const float _eyeScale) noexcept;
   float getEyeScale() const noexcept;
 
+  void  setEyeTranslate(const glm::vec3 _eyeTranslate) noexcept;
+  glm::vec3 getEyeTranslate() const noexcept;
+
   void  setEyeRotation(const float _eyeRotation) noexcept;
   float getEyeRotation() const noexcept;
 
@@ -98,6 +104,9 @@ public:
 
   void  setTessMaskCap(const float _tessMaskCap) noexcept;
   float getTessMaskCap() const noexcept;
+
+  void  setPhongStrength(const float _strength) noexcept;
+  float getPhongStrength() const noexcept;
 
 private:
   void initTargets();
@@ -149,11 +158,13 @@ private:
   std::chrono::high_resolution_clock::time_point m_last;
   float m_time = 0.0f;
   bool m_paused = true;
-  GLuint m_tessType = 0;
+  GLuint m_tessType = 1;
   int m_tessLevelInner  = 15;
   int m_tessLevelOuter  = 15;
   float m_tessMaskCap   = 1.f;
+  float m_phongStrength = 0.55f;
 
+  glm::vec3 m_eyeTranslate {0.21, 0.3, 0.0};
   float m_eyeDisp      = -0.2f;
   float m_eyeScale     = 1.55f;
   float m_eyeRotation  =  7.0f;

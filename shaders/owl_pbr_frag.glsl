@@ -191,7 +191,9 @@ void main()
   vec2 envBRDF  = texture(u_brdfMap, vec2(max(dot(N, V), 0.0), u_roughness)).rg;
   vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 
-  vec3 ambient  = (kD * diffuse + specular) * u_ao;
+  float ao = clamp(albedoDisp.w, 0.0, 1.0);
+  vec3 ambient  = (kD * diffuse + specular);
+  ambient = mix(ambient, ambient * ao, u_ao);
 
   vec3 color = ambient + Lo;
 

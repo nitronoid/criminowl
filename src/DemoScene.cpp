@@ -72,7 +72,7 @@ void DemoScene::keyPress(QKeyEvent* io_event)
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::initMaterials()
 {
-  m_material.reset(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, context(), 1.0f, 0.2f, 0.0, 0.1f, 0.3f, 200u, 25u));
+  m_material.reset(new MaterialPBR(m_camera, m_shaderLib, &m_matrices, context(), 0.5f, 0.2f, 0.0, 0.1f, 0.3f, 200u, 25u));
 
   auto name = m_shaderLib->loadShaderProg(m_material->shaderFileName());
   m_material->setShaderName(name);
@@ -83,6 +83,36 @@ void DemoScene::metallicUpdate(const double _metallic)
 {
   makeCurrent();
   m_material->setMetallic(static_cast<float>(_metallic));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::aoUpdate(const double _ao)
+{
+  makeCurrent();
+  m_material->setAO(static_cast<float>(_ao));
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeTranslateXUpdate(const double _x)
+{
+  makeCurrent();
+  auto currentTranslate = m_material->getEyeTranslate();
+  currentTranslate.x = static_cast<float>(_x);
+  m_material->setEyeTranslate(currentTranslate);
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeTranslateYUpdate(const double _y)
+{
+  makeCurrent();
+  auto currentTranslate = m_material->getEyeTranslate();
+  currentTranslate.y = static_cast<float>(_y);
+  m_material->setEyeTranslate(currentTranslate);
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::eyeTranslateZUpdate(const double _z)
+{
+  makeCurrent();
+  auto currentTranslate = m_material->getEyeTranslate();
+  currentTranslate.z = static_cast<float>(_z);
+  m_material->setEyeTranslate(currentTranslate);
 }
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::roughnessUpdate(const double _roughness)
@@ -113,6 +143,12 @@ void DemoScene::tessUpdate(const int _tessType)
 {
   makeCurrent();
   m_material->setTessType(_tessType);
+}
+//-----------------------------------------------------------------------------------------------------
+void DemoScene::phongStrengthUpdate(const int _strengthPercent)
+{
+  makeCurrent();
+  m_material->setPhongStrength(_strengthPercent * 0.01f);
 }
 //-----------------------------------------------------------------------------------------------------
 void DemoScene::tessLevelInnerUpdate(const int _tessLevel)
