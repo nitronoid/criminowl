@@ -78,7 +78,7 @@ void TrackballCamera::mouseZoom(const glm::vec2 &_mousePos)
 {
   m_zoom += (_mousePos.y - m_lastPos.y) * 0.25f * m_sensitivity;
   m_lastPos = _mousePos;
-  m_zoom = glm::clamp(m_zoom, 0.0f, 10.0f);
+  m_zoom = glm::clamp(m_zoom, 2.5f, 15.0f);
 }
 
 glm::vec3 TrackballCamera::getCameraEye() const noexcept

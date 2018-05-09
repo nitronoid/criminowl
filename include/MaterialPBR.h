@@ -135,6 +135,19 @@ private:
   );
 
   std::array<QMatrix4x4, 6>  m_captureViews;
+  std::array<QVector4D, 9> m_colours = {
+    {
+      {0.093f,  0.02f, 0.003f, 0.0f},
+      {0.036f, 0.008f, 0.001f, 0.0f},
+      { 0.03f, 0.009f,   0.0f, 0.0f},
+      { 0.08f, 0.002f,   0.0f, 0.0f},
+      {0.703f, 0.188f, 0.108f, 0.0f},
+      {0.707f, 0.090f, 0.021f, 0.0f},
+      {0.960f, 0.436f, 0.149f, 0.0f},
+      {0.843f, 0.326f, 0.176f, 0.0f},
+      {  1.0f,  0.31f, 0.171f, 0.0f}
+    }
+  };
   QMatrix4x4 m_captureProjection;
 
   std::unique_ptr<QOpenGLTexture> m_sphereMap;

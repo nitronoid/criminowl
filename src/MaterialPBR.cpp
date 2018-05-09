@@ -9,7 +9,7 @@
 void MaterialPBR::init()
 {
   auto shaderPtr = m_shaderLib->getShader(m_shaderName);
-
+  auto funcs = m_context->versionFunctions<QOpenGLFunctions_4_3_Core>();
   QOpenGLVertexArrayObject vao;
   // Create and bind our Vertex Array Object
   vao.create();
@@ -62,8 +62,14 @@ void MaterialPBR::init()
     vbo.setIndices(plane.getIndicesData());
   }
   initBrdfLUTMap(plane, vbo);
+
   // Generate the albedo map
-  generate3DTexture(plane, vbo, m_albedoMap, 512, "shaderPrograms/owl_noise.json", QOpenGLTexture::RGBA16F);
+  generate3DTexture(plane, vbo, m_albedoMap, 512, "shaderPrograms/owl_noise.json", QOpenGLTexture::RGBA16F,
+                    [&cols = m_colours](auto shader)
+  {
+    shader->setUniformValueArray("u_cols", cols.data(), static_cast<int>(cols.size()));
+  });
+
   // Generate the normal map
   generate3DTexture(plane, vbo, m_normalMap, 512, "shaderPrograms/owl_normal.json", QOpenGLTexture::RGB16F,
                     [&bumpMap = m_albedoMap](auto shader)
@@ -87,7 +93,7 @@ void MaterialPBR::init()
   shaderPtr->setUniformValue("u_metallic", m_metallic);
   shaderPtr->setUniformValue("u_baseSpec", m_baseSpec);
   shaderPtr->setUniformValue("u_normalStrength", m_normalStrength);
-  m_context->versionFunctions<QOpenGLFunctions_4_3_Core>()->glUniformSubroutinesuiv(GL_TESS_EVALUATION_SHADER, 1, &m_tessType);
+  funcs->glUniformSubroutinesuiv(GL_TESS_EVALUATION_SHADER, 1, &m_tessType);
   shaderPtr->setUniformValue("u_tessLevelInner", m_tessLevelInner);
   shaderPtr->setUniformValue("u_tessLevelOuter", m_tessLevelOuter);
 
@@ -112,7 +118,7 @@ void MaterialPBR::update()
   auto now = high_resolution_clock::now();
   m_time += (duration_cast<milliseconds>(now - m_last).count() * !m_paused);
   m_last = now;
-  const auto blend = std::fmod(m_time * 0.001f * m_morphTargetFPS, static_cast<float>(m_morphTargetCount));
+  const auto blend = std::fmod(m_time * 0.001f * m_morphTargetFPS, static_cast<float>(m_morphTargetCount - 1));
   shaderPtr->setUniformValue("u_blend", blend);
   auto eye = m_cam->getCameraEye();
   shaderPtr->setUniformValue("u_camPos", QVector3D{eye.x, eye.y, eye.z});

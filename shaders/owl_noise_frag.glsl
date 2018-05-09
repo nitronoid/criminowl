@@ -1,4 +1,4 @@
-#version 410 core
+#version 430 core
 
 layout(location=0) out vec4 FragColor;
 in vec2 vs_texCoords;
@@ -7,6 +7,7 @@ const float k_scale = 5.0;
 
 uniform float u_zDepth;
 uniform vec3 u_offsetPos = vec3(1.0);
+uniform vec4 u_cols[9];
 
 #include "shaders/include/perlin_noise.h"
 #include "shaders/include/owl_noise_funcs.h"
@@ -33,23 +34,12 @@ vec4 calcAlbedoDisp()
     // wood chips
     slicednoise(randP, 2.0, 0.04, 0.4)
   );
-
-  vec3 cols[] = vec3[](
-    vec3(0.036, 0.008, 0.001),
-    vec3(0.03, 0.009, 0.0),
-    vec3(0.08, 0.002, 0.0),
-    vec3(0.703, 0.188, 0.108),
-    vec3(0.707, 0.090, 0.021),
-    vec3(0.960, 0.436, 0.149),
-    vec3(0.843, 0.326, 0.176),
-    vec3(1, 0.31, 0.171)
-  );
   
-  vec4 result = vec4(0.093, 0.02, 0.003, 0.0);
+  vec4 result = u_cols[0];
 
   for (int i = 0; i < 8; ++i)
   {
-    result.xyz = mix(result.xyz, cols[i], layers[i]);
+    result.xyz = mix(result.xyz, u_cols[i + 1].xyz, layers[i]);
     result.w += layers[i];
   }
 
