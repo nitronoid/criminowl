@@ -78,7 +78,7 @@ void MaterialPBR::init()
     bumpMap->bind(0);
   });
 
-  initTargets();
+  initTargets("models/morph_targets/owl_pose", 4);
 
   shaderPtr->bind();
   shaderPtr->setPatchVertexCount(3);
@@ -323,7 +323,7 @@ void  MaterialPBR::setPhongStrength(const float _strength) noexcept
 
 float MaterialPBR::getPhongStrength() const noexcept { return m_phongStrength; }
 
-void MaterialPBR::initTargets()
+void MaterialPBR::initTargets(const std::string &_posePath, const unsigned _framePad)
 {
   std::vector<TriMesh> targets;
   targets.resize(m_morphTargetCount);
@@ -333,8 +333,8 @@ void MaterialPBR::initTargets()
   for (auto& target : targets)
   {
     auto frame = std::to_string(i);
-    frame = std::string(4 - frame.length(), '0') + frame;
-    target.load("models/morph_targets/owl_pose." + frame + ".obj");
+    frame = std::string(_framePad - frame.length(), '0') + frame;
+    target.load(_posePath + "." + frame + ".obj");
     auto& verts = target.getVertices();
     auto& norms = target.getNormals();
 
@@ -512,12 +512,11 @@ void MaterialPBR::initPrefilteredMap(const TriMesh &_cube, const MeshVBO &_vbo)
   for (int mip = 0; mip < maxMipLevels; ++mip)
   {
     // reisze framebuffer according to mip-level size.
-    auto mipWidth  = static_cast<int>(128 * std::pow(0.5f, mip));
-    auto mipHeight = static_cast<int>(128 * std::pow(0.5f, mip));
-    auto fbo = std::make_unique<QOpenGLFramebufferObject>(mipWidth, mipHeight, QOpenGLFramebufferObject::Depth);
+    auto mipRes  = static_cast<int>(128 * std::pow(0.5f, mip));
+    auto fbo = std::make_unique<QOpenGLFramebufferObject>(mipRes, mipRes, QOpenGLFramebufferObject::Depth);
     fbo->bind();
     //    funcs->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
-    funcs->glViewport(0, 0, mipWidth, mipHeight);
+    funcs->glViewport(0, 0, mipRes, mipRes);
 
     float roughness = static_cast<float>(mip) / static_cast<float>(maxMipLevels - 1);
     prefilterShader->setUniformValue("u_roughness", roughness);

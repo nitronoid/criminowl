@@ -109,7 +109,7 @@ public:
   float getPhongStrength() const noexcept;
 
 private:
-  void initTargets();
+  void initTargets(const std::string &_posePath, const unsigned _framePad);
   void initCaptureMatrices();
   void initSphereMap();
   void initCubeMap(const TriMesh &_cube, const MeshVBO &_vbo);
