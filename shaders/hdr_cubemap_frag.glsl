@@ -7,7 +7,7 @@ uniform sampler2D u_sphereMap;
 
 const vec2 k_invAtan = vec2(0.1591, 0.3183);
 
-vec2 SampleSphericalMap(vec3 v)
+vec2 sampleSphericalMap(vec3 v)
 {
     vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
     uv *= k_invAtan;
@@ -17,7 +17,7 @@ vec2 SampleSphericalMap(vec3 v)
 
 void main()
 {		
-    vec2 uv = SampleSphericalMap(normalize(vs_localPos)); // make sure to normalize localPos
+    vec2 uv = sampleSphericalMap(normalize(vs_localPos)); // make sure to normalize localPos
     vec3 color = texture(u_sphereMap, uv).rgb;
     
     FragColor = vec4(color, 1.0);
