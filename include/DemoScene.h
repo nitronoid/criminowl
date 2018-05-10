@@ -3,7 +3,6 @@
 
 #include "Scene.h"
 #include "MaterialPBR.h"
-#include "MaterialPhong.h"
 #include "ShaderLib.h"
 
 

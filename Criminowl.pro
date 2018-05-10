@@ -38,13 +38,8 @@ HEADERS += \
     include/MaterialPBR.h \
     include/Scene.h \
     include/DemoScene.h \
-    include/MaterialPhong.h \
     include/ShaderLib.h \
     include/MeshVBO.h \
-    include/MaterialWireframe.h \
-    include/MaterialFractal.h \
-    include/MaterialEnvMap.h \
-    include/MaterialBump.h \
     include/TriMesh.h \
     include/Edge.h
 
@@ -58,13 +53,8 @@ SOURCES += \
     src/MaterialPBR.cpp \
     src/Scene.cpp \
     src/DemoScene.cpp \
-    src/MaterialPhong.cpp \
     src/ShaderLib.cpp \
     src/MeshVBO.cpp \
-    src/MaterialWireframe.cpp \
-    src/MaterialFractal.cpp \
-    src/MaterialEnvMap.cpp \
-    src/MaterialBump.cpp \
     src/TriMesh.cpp
 
 OTHER_FILES += \
@@ -73,6 +63,7 @@ OTHER_FILES += \
     $$files(models/*, true)
 
 FORMS += ui/mainwindow.ui
+
 
 linux:{
     LIBS += -lGL -lGLU -lGLEW -lassimp

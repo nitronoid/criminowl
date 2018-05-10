@@ -41,7 +41,7 @@ const vec3 k_lightPositions[4] = vec3[4](
       vec3( k_scale, k_lightHeight,  k_scale)
       );
 
-const float k_lightIntensity = 100.f;
+const float k_lightIntensity = 100;
 const vec3 k_lightColors[4] = vec3[4](
       vec3(k_lightIntensity, k_lightIntensity, k_lightIntensity),
       vec3(k_lightIntensity, k_lightIntensity, k_lightIntensity),
@@ -56,146 +56,90 @@ const float k_PI = 3.14159265359;
 #include "shaders/include/owl_noise_funcs.h"
 #include "shaders/include/owl_eye_funcs.h"
 #include "shaders/include/owl_bump_funcs.h"
+#include "shaders/include/pbr_funcs.h"
 
-// ----------------------------------------------------------------------------
-float DistributionGGX(vec3 N, vec3 H, float roughness)
-{
-  float a = roughness*u_roughness;
-  float a2 = a*a;
-  float NdotH = max(dot(N, H), 0.0);
-  float NdotH2 = NdotH*NdotH;
-
-  float nom   = a2;
-  float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-  denom = k_PI * denom * denom;
-
-  return nom / denom;
-}
-// ----------------------------------------------------------------------------
-float GeometrySchlickGGX(float NdotV, float roughness)
-{
-  float r = (roughness + 1.0);
-  float k = (r*r) / 8.0;
-
-  float nom   = NdotV;
-  float denom = NdotV * (1.0 - k) + k;
-
-  return nom / denom;
-}
-// ----------------------------------------------------------------------------
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
-{
-  float NdotV = max(dot(N, V), 0.0);
-  float NdotL = max(dot(N, L), 0.0);
-  float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-  float ggx1 = GeometrySchlickGGX(NdotL, roughness);
-
-  return ggx1 * ggx2;
-}
-// ----------------------------------------------------------------------------
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
-{
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
-}
-// ----------------------------------------------------------------------------
-vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
-{
-  return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
-}
 
 void main()
 {
+  // We use the base position to look-up our textures so that animation doesn't slide through
   vec3 coord = go_out.base_position * 0.2 + vec3(0.5, 0.55, 0.5);
 
-  vec4 normalTgt = texture(u_normalMap, coord);
-//  int normalResidency = sparseTextureEXT(u_normalMap, coord, normalTgt);
-  vec4 albedoDisp = texture(u_albedoMap, coord);
-//  int albedoResidency = sparseTextureEXT(u_albedoMap, coord, albedoDisp);
-//  if (!sparseTexelsResidentEXT(albedoResidency) || !sparseTexelsResidentEXT(normalResidency))
-//    discard;
+  // Retrieve our normal map value
+  vec4 normalAdjust = texture(u_normalMap, coord);
 
   // Extract the normal from the normal map (rescale to [-1,1]
-  vec3 tgt = normalTgt.rgb * 2.0 - 1.0;
+  vec3 tgt = normalAdjust.rgb * 2.0 - 1.0;
 
   // The source is just up in the Z-direction
   vec3 src = vec3(0.0, 0.0, 1.0);
 
   // Perturb the normal according to the target
-  vec3 np = normalize(mix(go_out.normal, rotateVector(src, tgt, go_out.normal), u_normalStrength));
+  vec3 perturbedNormal = normalize(mix(go_out.normal, rotateVector(src, tgt, go_out.normal), u_normalStrength));
 
+  // Get the albedo map val
+  vec4 albedoDisp = texture(u_albedoMap, coord);
+  // Apply new albedo for the eyes
   vec3 eyeAlbedo = mix(albedoDisp.xyz, vec3(0.4, 0.34, 0.38) * turb(u_offsetPos, 10), go_out.eyeVal);
 
-  vec3 N = np;
-  vec3 V = normalize(u_camPos - go_out.world_position);
-  vec3 R = reflect(-V, N);
+  // Final inputs to the reflectance equation
+  vec3 n = perturbedNormal;
+  vec3 v = normalize(u_camPos - go_out.world_position);
 
 
-  // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
-  // of 0.04 and if it's a metal, use their albedo color as F0 (metallic workflow)
-  vec3 F0 = vec3(u_baseSpec);
-  F0 = mix(F0, eyeAlbedo, u_metallic);
+  // use albedo as f0 when metallic, otherwise use the set uniform
+  vec3 f0 = mix(vec3(u_baseSpec), eyeAlbedo, u_metallic);
 
   // reflectance equation
-  vec3 Lo = vec3(0.0);
+  vec3 light_out = vec3(0.0);
   for(int i = 0; i < 4; ++i)
   {
     vec3 trans = vec3(0.0, 0.0, -2.0);
     vec3 ray = k_lightPositions[i] - go_out.world_position + trans;
     // calculate per-light radiance
-    vec3 L = normalize(ray);
-    vec3 H = normalize(V + L);
+    vec3 l = normalize(ray);
+    vec3 h = normalize(v + l);
     float dist = length(ray);
     float attenuation = 1.0 / (dist * dist);
     vec3 radiance = k_lightColors[i] * attenuation;
 
     // Cook-Torrance BRDF
-    float NDF = DistributionGGX(N, H, u_roughness);
-    float G   = GeometrySmith(N, V, L, u_roughness);
-    vec3  F   = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    float ndf = trowbridgeReitzGGX(n, h, u_roughness);
+    float g   = geometrySmith(n, v, l, u_roughness);
+    vec3  f   = fresnelSchlick(max(dot(h, v), 0.0), f0);
 
-    vec3 nominator    = NDF * G * F;
-    float denominator = 4 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0) + 0.001; // 0.001 to prevent divide by zero.
+    vec3 nominator    = ndf * g * f;
+    float denominator = 4 * max(dot(v, n), 0.0) * max(dot(l, n), 0.0) + 0.0001; // 0.0001 to prevent divide by zero.
     vec3 brdf = nominator / denominator;
 
-    // kS is equal to Fresnel
-    vec3 kS = F;
-    // for energy conservation, the diffuse and specular light can't
-    // be above 1.0 (unless the surface emits light); to preserve this
-    // relationship the diffuse component (kD) should equal 1.0 - kS.
-    vec3 kD = vec3(1.0) - kS;
-    // multiply kD by the inverse metalness such that only non-metals
-    // have diffuse lighting, or a linear blend if partly metal (pure metals
-    // have no diffuse light).
-    kD *= 1.0 - u_metallic;
+    // diffuse = 1 - spec, where spec = fresnel, this means that energy is conserved.
+    // pure metals have no diffuse lighting so we must remove it here
+    vec3 diffuse = diffuseTerm(f, u_metallic);
 
     // scale light by NdotL
-    float NdotL = max(dot(N, L), 0.0);
+    float n_dot_l = max(dot(n, l), 0.0);
 
-    // add to outgoing radiance Lo
-    Lo += (kD * eyeAlbedo / k_PI + brdf) * radiance * NdotL;
+    // add to outgoing radiance light_out
+    light_out += (diffuse * eyeAlbedo / k_PI + brdf) * radiance * n_dot_l;
   }
 
 
-  vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, u_roughness);
+  vec3 f = fresnelSchlickRoughness(max(dot(n, v), 0.0), f0, u_roughness);
 
-  vec3 kS = F;
-  vec3 kD = 1.0 - kS;
-  kD *= (1.0 - u_metallic);
-
-  vec3 irradiance = texture(u_irradianceMap, N).rgb;
-  vec3 diffuse    = irradiance * eyeAlbedo;
+  vec3 irradiance = texture(u_irradianceMap, n).rgb;
+  vec3 diffuse = diffuseTerm(f, u_metallic) * (irradiance * eyeAlbedo);
 
 
   const float MAX_REFLECTION_LOD = 4.0;
-  vec3 prefilteredColor = textureLod(u_prefilterMap, R,  u_roughness * MAX_REFLECTION_LOD).rgb;
-  vec2 envBRDF  = texture(u_brdfMap, vec2(max(dot(N, V), 0.0), u_roughness)).rg;
-  vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
+  vec3 r = reflect(-v, n);
+  vec3 prefilteredColor = textureLod(u_prefilterMap, r,  u_roughness * MAX_REFLECTION_LOD).rgb;
+  vec2 envBRDF  = texture(u_brdfMap, vec2(max(dot(n, v), 0.0), u_roughness)).rg;
+  vec3 specular = prefilteredColor * (f * envBRDF.x + envBRDF.y);
 
   float ao = clamp(albedoDisp.w, 0.0, 1.0);
-  vec3 ambient  = (kD * diffuse + specular);
+  vec3 ambient  = (diffuse + specular);
   ambient = mix(ambient, ambient * ao, u_ao);
 
-  vec3 color = ambient + Lo;
+  vec3 color = ambient + light_out;
 
   // HDR tonemaping
   color = color / (color + vec3(1.0));

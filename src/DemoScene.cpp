@@ -1,10 +1,5 @@
 #include "DemoScene.h"
-#include "MaterialWireframe.h"
 #include "MaterialPBR.h"
-#include "MaterialPhong.h"
-#include "MaterialFractal.h"
-#include "MaterialEnvMap.h"
-#include "MaterialBump.h"
 #include <QOpenGLContext>
 #include <QOpenGLFunctions_4_1_Core>
 #include <QOpenGLFramebufferObject>
