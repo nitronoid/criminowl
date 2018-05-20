@@ -1,0 +1,5 @@
+models/* linguist-generated=true
+maya/* linguist-generated=true
+images/* linguist-generated=true
+report/* linguist-documentation=true
+shaders/* linguist-language=glsl
